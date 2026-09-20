@@ -1,5 +1,12 @@
 package lab.java.demo.service;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+
 import lab.java.demo.Models.Appointment;
 import lab.java.demo.Models.Doctor;
 import lab.java.demo.Models.Notifier;
@@ -8,12 +15,8 @@ import lab.java.demo.exception.AppointmentNotFoundException;
 import lab.java.demo.exception.InvalidAppointmentException;
 import lab.java.demo.repository.AppointmentRepository;
 import lab.java.demo.util.AppointmentComparators;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.time.LocalDateTime;
-import java.util.List;
-
+@Service
 public class AppointmentService {
 
     private static final Logger log = LoggerFactory.getLogger(AppointmentService.class);

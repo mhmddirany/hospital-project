@@ -15,7 +15,7 @@ A Spring Boot REST API for managing hospital operations — doctors, nurses, pat
 
 ### Prerequisites
 
-- JDK matching the version set in `pom.xml`
+- JDK 25 (the version set in `pom.xml` and used to verify the build)
 - Maven (or use the included `mvnw` / `mvnw.cmd` wrapper — no local Maven install needed)
 
 ### Run locally

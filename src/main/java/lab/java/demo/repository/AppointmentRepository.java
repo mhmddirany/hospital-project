@@ -1,14 +1,21 @@
 package lab.java.demo.repository;
 
-import lab.java.demo.Models.Appointment;
-
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Repository;
+
+import lab.java.demo.Models.Appointment;
 
 /**
  * In-memory repository that acts like a collection of Appointment objects.
  */
+@Repository
 public class AppointmentRepository {
 
     // Internal storage using Map and List

@@ -3,10 +3,12 @@ package lab.java.demo.service;
 import lab.java.demo.Models.Doctor;
 import lab.java.demo.repository.DoctorRepository;
 import lab.java.demo.util.DoctorComparators;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
 
+@Service
 public class DoctorService extends BaseCrudService<Doctor, Integer> {
 
     private final DoctorRepository doctorRepository;

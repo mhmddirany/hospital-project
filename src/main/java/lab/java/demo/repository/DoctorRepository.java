@@ -1,12 +1,19 @@
 package lab.java.demo.repository;
 
-import lab.java.demo.Models.Doctor;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
-import java.util.*;
+import org.springframework.stereotype.Repository;
+
+import lab.java.demo.Models.Doctor;
 
 /**
  * Repository for Doctor objects.
  */
+@Repository
 public class DoctorRepository {
 
     private final Map<Integer, Doctor> doctors = new HashMap<>();
