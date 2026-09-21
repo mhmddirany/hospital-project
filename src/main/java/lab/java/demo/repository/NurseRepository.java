@@ -1,9 +1,11 @@
 package lab.java.demo.repository;
 
 import lab.java.demo.Models.Nurse;
+import org.springframework.stereotype.Repository;
 
 import java.util.*;
 
+@Repository
 public class NurseRepository {
 
     private final Map<Integer, Nurse> nurses = new HashMap<>();

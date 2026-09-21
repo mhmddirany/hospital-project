@@ -1,12 +1,11 @@
 package lab.java.demo.repository;
 
 import lab.java.demo.Models.Patient;
+import org.springframework.stereotype.Repository;
 
 import java.util.*;
 
-/**
- * Simple repository managing patients in memory using Map and List.
- */
+@Repository
 public class PatientRepository {
 
     private final Map<Integer, Patient> patients = new HashMap<>();

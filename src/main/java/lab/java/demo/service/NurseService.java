@@ -3,10 +3,12 @@ package lab.java.demo.service;
 import lab.java.demo.Models.Nurse;
 import lab.java.demo.repository.NurseRepository;
 import lab.java.demo.util.NurseComparators;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
 
+@Service
 public class NurseService extends BaseCrudService<Nurse, Integer> {
 
     private final NurseRepository nurseRepository;
@@ -14,8 +16,6 @@ public class NurseService extends BaseCrudService<Nurse, Integer> {
     public NurseService(NurseRepository nurseRepository) {
         this.nurseRepository = nurseRepository;
     }
-
-    // -------- BaseCrudService hooks --------
 
     @Override
     protected List<Nurse> rawFindAll() {
@@ -36,8 +36,6 @@ public class NurseService extends BaseCrudService<Nurse, Integer> {
     protected boolean rawDeleteById(Integer id) {
         return nurseRepository.deleteById(id);
     }
-
-    // -------- Nurse-specific API --------
 
     public Nurse addNurse(Nurse nurse) {
         return save(nurse);

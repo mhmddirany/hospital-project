@@ -1,9 +1,11 @@
 package lab.java.demo.repository;
 
 import lab.java.demo.Models.Receptionist;
+import org.springframework.stereotype.Repository;
 
 import java.util.*;
 
+@Repository
 public class ReceptionistRepository {
 
     private final Map<Integer, Receptionist> receptionists = new HashMap<>();

@@ -6,10 +6,12 @@ import lab.java.demo.repository.PatientRepository;
 import lab.java.demo.util.PatientComparators;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
 
+@Service
 public class PatientService {
 
     private static final Logger log = LoggerFactory.getLogger(PatientService.class);

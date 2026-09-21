@@ -3,10 +3,12 @@ package lab.java.demo.service;
 import lab.java.demo.Models.Receptionist;
 import lab.java.demo.repository.ReceptionistRepository;
 import lab.java.demo.util.ReceptionistComparators;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
 
+@Service
 public class ReceptionistService extends BaseCrudService<Receptionist, Integer> {
 
     private final ReceptionistRepository receptionistRepository;
@@ -14,8 +16,6 @@ public class ReceptionistService extends BaseCrudService<Receptionist, Integer> 
     public ReceptionistService(ReceptionistRepository receptionistRepository) {
         this.receptionistRepository = receptionistRepository;
     }
-
-    // -------- BaseCrudService hooks --------
 
     @Override
     protected List<Receptionist> rawFindAll() {
@@ -36,8 +36,6 @@ public class ReceptionistService extends BaseCrudService<Receptionist, Integer> 
     protected boolean rawDeleteById(Integer id) {
         return receptionistRepository.deleteById(id);
     }
-
-    // -------- Receptionist-specific API --------
 
     public Receptionist addReceptionist(Receptionist r) {
         return save(r);
