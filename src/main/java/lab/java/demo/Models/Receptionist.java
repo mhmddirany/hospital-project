@@ -18,15 +18,13 @@ public class Receptionist extends Employee implements Comparable<Receptionist> {
 
     public Appointment scheduleAppointment(int patientId, int doctorId, LocalDateTime dateTime,
                                            Patient patient, Doctor doctor) {
-        Appointment appt = new Appointment(Appointment.nextId(), dateTime, "scheduled", patient, doctor);
+        Appointment appt = new Appointment(Appointment.nextId(), dateTime, AppointmentStatus.REQUESTED, patient, doctor);
         patient.addAppointment(appt);
         return appt;
     }
 
     public boolean cancelAppointment(int apptId) { return true; }
     public boolean checkAvailability(int doctorId) { return true; }
-
-    // ---------- equals / hashCode / Comparable ----------
 
     @Override
     public boolean equals(Object o) {
@@ -41,7 +39,6 @@ public class Receptionist extends Employee implements Comparable<Receptionist> {
         return Objects.hash(id);
     }
 
-    // Natural ordering: by name, then id
     @Override
     public int compareTo(Receptionist other) {
         int cmp = this.getName().compareToIgnoreCase(other.getName());

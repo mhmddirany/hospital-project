@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import lab.java.demo.Models.Appointment;
+import lab.java.demo.Models.AppointmentStatus;
 import lab.java.demo.Models.Doctor;
 import lab.java.demo.Models.Notifier;
 import lab.java.demo.Models.Patient;
@@ -38,7 +39,7 @@ public class AppointmentService {
         Appointment appt = new Appointment(
                 Appointment.nextId(),
                 dateTime,
-                "requested",
+                AppointmentStatus.REQUESTED,
                 patient,
                 doctor
         );

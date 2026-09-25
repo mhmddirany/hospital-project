@@ -1,6 +1,7 @@
 package lab.java.demo.util;
 
 import lab.java.demo.Models.Appointment;
+import lab.java.demo.Models.AppointmentStatus;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -9,7 +10,7 @@ public final class CollectionUtils {
 
     private CollectionUtils() {}
 
-    public static Map<String, List<Appointment>> groupAppointmentsByStatus(List<Appointment> appointments) {
+    public static Map<AppointmentStatus, List<Appointment>> groupAppointmentsByStatus(List<Appointment> appointments) {
         return appointments.stream()
                 .collect(Collectors.groupingBy(Appointment::getStatus));
     }

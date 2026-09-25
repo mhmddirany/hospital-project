@@ -34,7 +34,7 @@ public class Patient implements Comparable<Patient> {
     public List<Doctor> searchDoctor() { return List.of(); }
 
     public Appointment bookAppointment(int doctorId, LocalDateTime dateTime, Doctor doctor) {
-        Appointment appt = new Appointment(Appointment.nextId(), dateTime, "requested", this, doctor);
+        Appointment appt = new Appointment(Appointment.nextId(), dateTime, AppointmentStatus.REQUESTED, this, doctor);
         appointments.add(appt);
         return appt;
     }
@@ -42,8 +42,7 @@ public class Patient implements Comparable<Patient> {
     public boolean cancelAppointment(int appointmentId) {
         for (Appointment a : appointments) {
             if (a.getId() == appointmentId) {
-                a.setStatus("canceled");
-                return true;
+                return a.cancel();
             }
         }
         return false;
@@ -51,8 +50,6 @@ public class Patient implements Comparable<Patient> {
 
     public List<Appointment> getAppointments() { return Collections.unmodifiableList(appointments); }
     void addAppointment(Appointment appt) { appointments.add(appt); }
-
-    // ---------- equals / hashCode / Comparable ----------
 
     @Override
     public boolean equals(Object o) {
@@ -67,7 +64,6 @@ public class Patient implements Comparable<Patient> {
         return Objects.hash(id);
     }
 
-    // Natural ordering: by name, then id
     @Override
     public int compareTo(Patient other) {
         int cmp = this.name.compareToIgnoreCase(other.name);

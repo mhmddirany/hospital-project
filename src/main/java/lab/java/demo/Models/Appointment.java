@@ -5,17 +5,19 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import lab.java.demo.exception.InvalidAppointmentException;
+
 public class Appointment implements Comparable<Appointment> {
     private static final AtomicInteger ID = new AtomicInteger(1);
 
     private final int id;
     private LocalDateTime dateTime;
-    private String status;
+    private AppointmentStatus status;
 
     private final Patient patient;
     private final Doctor doctor;
 
-    public Appointment(int id, LocalDateTime dateTime, String status, Patient patient, Doctor doctor) {
+    public Appointment(int id, LocalDateTime dateTime, AppointmentStatus status, Patient patient, Doctor doctor) {
         this.id = id;
         this.dateTime = dateTime;
         this.status = status;
@@ -28,18 +30,27 @@ public class Appointment implements Comparable<Appointment> {
     public int getId() { return id; }
     public LocalDateTime getDateTime() { return dateTime; }
     public void setDateTime(LocalDateTime dateTime) { this.dateTime = dateTime; }
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
+    public AppointmentStatus getStatus() { return status; }
     public Patient getPatient() { return patient; }
     public Doctor getDoctor() { return doctor; }
 
     public boolean confirm() {
-        this.status = "confirmed";
+        if (status == AppointmentStatus.CANCELED) {
+            throw new InvalidAppointmentException(
+                    "Cannot confirm appointment #" + id + " because it has already been canceled");
+        }
+        if (status == AppointmentStatus.CONFIRMED) {
+            return false;
+        }
+        this.status = AppointmentStatus.CONFIRMED;
         return true;
     }
 
     public boolean cancel() {
-        this.status = "canceled";
+        if (status == AppointmentStatus.CANCELED) {
+            return false;
+        }
+        this.status = AppointmentStatus.CANCELED;
         return true;
     }
 
@@ -50,9 +61,6 @@ public class Appointment implements Comparable<Appointment> {
         }
     }
 
-    // ---------- equals / hashCode / Comparable ----------
-
-    // We use id as the unique identifier
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -66,7 +74,6 @@ public class Appointment implements Comparable<Appointment> {
         return Objects.hash(id);
     }
 
-    // Natural ordering: by dateTime, then by id
     @Override
     public int compareTo(Appointment other) {
         int cmp = this.dateTime.compareTo(other.dateTime);
