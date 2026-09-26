@@ -3,6 +3,8 @@ package lab.java.demo.controller;
 import java.util.List;
 import java.util.Optional;
 
+import jakarta.validation.Valid;
+
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -12,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import lab.java.demo.Models.Doctor;
 import lab.java.demo.dto.ApiResponse;
+import lab.java.demo.dto.DoctorRequest;
 import lab.java.demo.service.DoctorService;
 
 @RestController
@@ -25,8 +28,9 @@ public class DoctorController {
     }
 
     @PostMapping
-    public ApiResponse<Doctor> addDoctor(@RequestBody Doctor d) {
-        Doctor saved = doctorService.addDoctor(d);
+    public ApiResponse<Doctor> addDoctor(@Valid @RequestBody DoctorRequest request) {
+        Doctor doctor = new Doctor(request.getId(), request.getName(), request.getAge(), request.getSpecialty());
+        Doctor saved = doctorService.addDoctor(doctor);
         return new ApiResponse<>("Doctor added successfully", saved);
     }
 

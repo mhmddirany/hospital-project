@@ -2,7 +2,9 @@ package lab.java.demo.controller;
 
 import lab.java.demo.Models.Patient;
 import lab.java.demo.dto.ApiResponse;
+import lab.java.demo.dto.PatientRequest;
 import lab.java.demo.service.PatientService;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,8 +21,9 @@ public class PatientController {
     }
 
     @PostMapping
-    public ApiResponse<Patient> register(@RequestBody Patient p) {
-        Patient saved = patientService.registerPatient(p);
+    public ApiResponse<Patient> register(@Valid @RequestBody PatientRequest request) {
+        Patient patient = new Patient(request.getId(), request.getName(), request.getAge());
+        Patient saved = patientService.registerPatient(patient);
         return new ApiResponse<>("Patient registered successfully", saved);
     }
 

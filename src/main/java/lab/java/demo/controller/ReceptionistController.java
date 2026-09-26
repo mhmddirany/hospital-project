@@ -2,7 +2,9 @@ package lab.java.demo.controller;
 
 import lab.java.demo.Models.Receptionist;
 import lab.java.demo.dto.ApiResponse;
+import lab.java.demo.dto.ReceptionistRequest;
 import lab.java.demo.service.ReceptionistService;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,8 +21,9 @@ public class ReceptionistController {
     }
 
     @PostMapping
-    public ApiResponse<Receptionist> addReceptionist(@RequestBody Receptionist r) {
-        Receptionist saved = receptionistService.addReceptionist(r);
+    public ApiResponse<Receptionist> addReceptionist(@Valid @RequestBody ReceptionistRequest request) {
+        Receptionist receptionist = new Receptionist(request.getId(), request.getName(), request.getAge());
+        Receptionist saved = receptionistService.addReceptionist(receptionist);
         return new ApiResponse<>("Receptionist added successfully", saved);
     }
 

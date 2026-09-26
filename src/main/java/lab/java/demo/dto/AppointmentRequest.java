@@ -1,13 +1,23 @@
 package lab.java.demo.dto;
 
+import jakarta.validation.constraints.Future;
+import jakarta.validation.constraints.NotNull;
+
 import lab.java.demo.Models.Doctor;
 import lab.java.demo.Models.Patient;
 
 import java.time.LocalDateTime;
 
 public class AppointmentRequest {
+
+    @NotNull(message = "patient must not be null")
     private Patient patient;
+
+    @NotNull(message = "doctor must not be null")
     private Doctor doctor;
+
+    @NotNull(message = "dateTime must not be null")
+    @Future(message = "dateTime must be in the future")
     private LocalDateTime dateTime;
 
     public Patient getPatient() { return patient; }

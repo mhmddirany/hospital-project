@@ -2,6 +2,8 @@ package lab.java.demo.controller;
 
 import java.util.List;
 
+import jakarta.validation.Valid;
+
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -27,7 +29,7 @@ public class AppointmentController {
     }
 
     @PostMapping
-    public ApiResponse<Appointment> requestAppointment(@RequestBody AppointmentRequest request) {
+    public ApiResponse<Appointment> requestAppointment(@Valid @RequestBody AppointmentRequest request) {
         Appointment appt = appointmentService.createAppointment(
                 request.getPatient(), request.getDoctor(), request.getDateTime());
         return new ApiResponse<>("Appointment requested", appt);

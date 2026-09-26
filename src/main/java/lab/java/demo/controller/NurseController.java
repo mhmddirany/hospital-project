@@ -2,7 +2,9 @@ package lab.java.demo.controller;
 
 import lab.java.demo.Models.Nurse;
 import lab.java.demo.dto.ApiResponse;
+import lab.java.demo.dto.NurseRequest;
 import lab.java.demo.service.NurseService;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,7 +21,8 @@ public class NurseController {
     }
 
     @PostMapping
-    public ApiResponse<Nurse> addNurse(@RequestBody Nurse nurse) {
+    public ApiResponse<Nurse> addNurse(@Valid @RequestBody NurseRequest request) {
+        Nurse nurse = new Nurse(request.getId(), request.getName(), request.getAge(), request.getDepartment());
         Nurse saved = nurseService.addNurse(nurse);
         return new ApiResponse<>("Nurse added successfully", saved);
     }
