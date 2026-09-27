@@ -1,6 +1,7 @@
 package lab.java.demo.service;
 
 import lab.java.demo.Models.Receptionist;
+import lab.java.demo.exception.ReceptionistNotFoundException;
 import lab.java.demo.repository.ReceptionistRepository;
 import lab.java.demo.util.ReceptionistComparators;
 import org.springframework.stereotype.Service;
@@ -44,6 +45,10 @@ public class ReceptionistService extends BaseCrudService<Receptionist, Integer> 
     @Override
     public Optional<Receptionist> findById(Integer id) {
         return super.findById(id);
+    }
+
+    public Receptionist getByIdOrThrow(int id) {
+        return findById(id).orElseThrow(() -> new ReceptionistNotFoundException(id));
     }
 
     public List<Receptionist> getAllSortedByName() {

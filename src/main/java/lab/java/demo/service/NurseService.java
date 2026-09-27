@@ -1,6 +1,7 @@
 package lab.java.demo.service;
 
 import lab.java.demo.Models.Nurse;
+import lab.java.demo.exception.NurseNotFoundException;
 import lab.java.demo.repository.NurseRepository;
 import lab.java.demo.util.NurseComparators;
 import org.springframework.stereotype.Service;
@@ -44,6 +45,10 @@ public class NurseService extends BaseCrudService<Nurse, Integer> {
     @Override
     public Optional<Nurse> findById(Integer id) {
         return super.findById(id);
+    }
+
+    public Nurse getByIdOrThrow(int id) {
+        return findById(id).orElseThrow(() -> new NurseNotFoundException(id));
     }
 
     public List<Nurse> findByDepartment(String department) {

@@ -20,7 +20,9 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({
             AppointmentNotFoundException.class,
             PatientNotFoundException.class,
-            DoctorNotFoundException.class
+            DoctorNotFoundException.class,
+            NurseNotFoundException.class,
+            ReceptionistNotFoundException.class
     })
     public ResponseEntity<ErrorResponse> handleNotFound(RuntimeException ex,
                                                         HttpServletRequest request) {

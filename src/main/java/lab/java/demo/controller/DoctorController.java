@@ -1,7 +1,6 @@
 package lab.java.demo.controller;
 
 import java.util.List;
-import java.util.Optional;
 
 import jakarta.validation.Valid;
 
@@ -35,10 +34,9 @@ public class DoctorController {
     }
 
     @GetMapping("/{id}")
-    public ApiResponse<Optional<Doctor>> getById(@PathVariable int id) {
-        Optional<Doctor> d = doctorService.findById(id);
-        String msg = d.isPresent() ? "Doctor found" : "Doctor not found";
-        return new ApiResponse<>(msg, d);
+    public ApiResponse<Doctor> getById(@PathVariable int id) {
+        Doctor doctor = doctorService.getByIdOrThrow(id);
+        return new ApiResponse<>("Doctor found", doctor);
     }
 
     @GetMapping("/specialty/{specialty}")

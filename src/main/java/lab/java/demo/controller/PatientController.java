@@ -8,7 +8,6 @@ import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/patients")
@@ -28,10 +27,9 @@ public class PatientController {
     }
 
     @GetMapping("/{id}")
-    public ApiResponse<Optional<Patient>> getById(@PathVariable int id) {
-        Optional<Patient> p = patientService.findById(id);
-        String msg = p.isPresent() ? "Patient found" : "Patient not found";
-        return new ApiResponse<>(msg, p);
+    public ApiResponse<Patient> getById(@PathVariable int id) {
+        Patient patient = patientService.getByIdOrThrow(id);
+        return new ApiResponse<>("Patient found", patient);
     }
 
     @GetMapping("/search/{name}")

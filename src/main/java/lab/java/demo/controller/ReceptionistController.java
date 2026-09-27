@@ -8,7 +8,6 @@ import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/receptionists")
@@ -28,10 +27,9 @@ public class ReceptionistController {
     }
 
     @GetMapping("/{id}")
-    public ApiResponse<Optional<Receptionist>> getById(@PathVariable int id) {
-        Optional<Receptionist> r = receptionistService.findById(id);
-        String msg = r.isPresent() ? "Receptionist found" : "Receptionist not found";
-        return new ApiResponse<>(msg, r);
+    public ApiResponse<Receptionist> getById(@PathVariable int id) {
+        Receptionist receptionist = receptionistService.getByIdOrThrow(id);
+        return new ApiResponse<>("Receptionist found", receptionist);
     }
 
     @GetMapping("/sorted/name")

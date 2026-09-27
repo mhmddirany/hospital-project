@@ -1,6 +1,7 @@
 package lab.java.demo.service;
 
 import lab.java.demo.Models.Doctor;
+import lab.java.demo.exception.DoctorNotFoundException;
 import lab.java.demo.repository.DoctorRepository;
 import lab.java.demo.util.DoctorComparators;
 import org.springframework.stereotype.Service;
@@ -48,6 +49,10 @@ public class DoctorService extends BaseCrudService<Doctor, Integer> {
     @Override
     public Optional<Doctor> findById(Integer id) {
         return super.findById(id);
+    }
+
+    public Doctor getByIdOrThrow(int id) {
+        return findById(id).orElseThrow(() -> new DoctorNotFoundException(id));
     }
 
     public List<Doctor> findBySpecialty(String specialty) {
