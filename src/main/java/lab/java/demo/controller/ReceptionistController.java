@@ -3,6 +3,7 @@ package lab.java.demo.controller;
 import lab.java.demo.Models.Receptionist;
 import lab.java.demo.dto.ApiResponse;
 import lab.java.demo.dto.ReceptionistRequest;
+import lab.java.demo.dto.ReceptionistResponse;
 import lab.java.demo.service.ReceptionistService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
@@ -20,21 +21,23 @@ public class ReceptionistController {
     }
 
     @PostMapping
-    public ApiResponse<Receptionist> addReceptionist(@Valid @RequestBody ReceptionistRequest request) {
+    public ApiResponse<ReceptionistResponse> addReceptionist(@Valid @RequestBody ReceptionistRequest request) {
         Receptionist receptionist = new Receptionist(Receptionist.nextId(), request.getName(), request.getAge());
         Receptionist saved = receptionistService.addReceptionist(receptionist);
-        return new ApiResponse<>("Receptionist added successfully", saved);
+        return new ApiResponse<>("Receptionist added successfully", ReceptionistResponse.from(saved));
     }
 
     @GetMapping("/{id}")
-    public ApiResponse<Receptionist> getById(@PathVariable int id) {
+    public ApiResponse<ReceptionistResponse> getById(@PathVariable int id) {
         Receptionist receptionist = receptionistService.getByIdOrThrow(id);
-        return new ApiResponse<>("Receptionist found", receptionist);
+        return new ApiResponse<>("Receptionist found", ReceptionistResponse.from(receptionist));
     }
 
     @GetMapping("/sorted/name")
-    public ApiResponse<List<Receptionist>> listAllSortedByName() {
-        return new ApiResponse<>("All receptionists sorted by name",
-                receptionistService.getAllSortedByName());
+    public ApiResponse<List<ReceptionistResponse>> listAllSortedByName() {
+        List<ReceptionistResponse> result = receptionistService.getAllSortedByName().stream()
+                .map(ReceptionistResponse::from)
+                .toList();
+        return new ApiResponse<>("All receptionists sorted by name", result);
     }
 }

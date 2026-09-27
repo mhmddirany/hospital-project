@@ -16,6 +16,7 @@ import lab.java.demo.Models.Appointment;
 import lab.java.demo.Models.Notifier;
 import lab.java.demo.dto.ApiResponse;
 import lab.java.demo.dto.AppointmentRequest;
+import lab.java.demo.dto.AppointmentResponse;
 import lab.java.demo.service.AppointmentService;
 
 @RestController
@@ -29,38 +30,38 @@ public class AppointmentController {
     }
 
     @PostMapping
-    public ApiResponse<Appointment> requestAppointment(@Valid @RequestBody AppointmentRequest request) {
+    public ApiResponse<AppointmentResponse> requestAppointment(@Valid @RequestBody AppointmentRequest request) {
         Appointment appt = appointmentService.createAppointment(
                 request.getPatientId(), request.getDoctorId(), request.getDateTime());
-        return new ApiResponse<>("Appointment requested", appt);
+        return new ApiResponse<>("Appointment requested", AppointmentResponse.from(appt));
     }
 
     @PutMapping("/{appointmentId}/confirm")
-    public ApiResponse<Appointment> confirm(@PathVariable int appointmentId) {
+    public ApiResponse<AppointmentResponse> confirm(@PathVariable int appointmentId) {
         Appointment appt = appointmentService.confirmAppointment(appointmentId);
-        return new ApiResponse<>("Appointment confirmed", appt);
+        return new ApiResponse<>("Appointment confirmed", AppointmentResponse.from(appt));
     }
 
     @PutMapping("/{appointmentId}/cancel")
-    public ApiResponse<Appointment> cancel(@PathVariable int appointmentId) {
+    public ApiResponse<AppointmentResponse> cancel(@PathVariable int appointmentId) {
         Appointment appt = appointmentService.cancelAppointment(appointmentId);
-        return new ApiResponse<>("Appointment cancelled", appt);
+        return new ApiResponse<>("Appointment cancelled", AppointmentResponse.from(appt));
     }
 
     @GetMapping("/patient/{patientId}")
-    public ApiResponse<List<Appointment>> listAppointmentsForPatient(@PathVariable int patientId) {
-        return new ApiResponse<>(
-                "Appointments for patient id " + patientId,
-                appointmentService.getAppointmentsForPatient(patientId)
-        );
+    public ApiResponse<List<AppointmentResponse>> listAppointmentsForPatient(@PathVariable int patientId) {
+        List<AppointmentResponse> result = appointmentService.getAppointmentsForPatient(patientId).stream()
+                .map(AppointmentResponse::from)
+                .toList();
+        return new ApiResponse<>("Appointments for patient id " + patientId, result);
     }
 
     @GetMapping("/doctor/{doctorId}")
-    public ApiResponse<List<Appointment>> listAppointmentsForDoctorSorted(@PathVariable int doctorId) {
-        return new ApiResponse<>(
-                "Appointments for doctor id " + doctorId + " sorted by date",
-                appointmentService.getAppointmentsForDoctorSortedByDate(doctorId)
-        );
+    public ApiResponse<List<AppointmentResponse>> listAppointmentsForDoctorSorted(@PathVariable int doctorId) {
+        List<AppointmentResponse> result = appointmentService.getAppointmentsForDoctorSortedByDate(doctorId).stream()
+                .map(AppointmentResponse::from)
+                .toList();
+        return new ApiResponse<>("Appointments for doctor id " + doctorId + " sorted by date", result);
     }
 
     @PostMapping("/reminders/tomorrow")
