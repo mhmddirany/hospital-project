@@ -4,12 +4,16 @@ import lab.java.demo.Models.Receptionist;
 import lab.java.demo.exception.ReceptionistConflictException;
 import org.springframework.stereotype.Repository;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Repository
 public class ReceptionistRepository {
 
-    private final Map<Integer, Receptionist> receptionists = new HashMap<>();
+    private final Map<Integer, Receptionist> receptionists = new ConcurrentHashMap<>();
 
     public List<Receptionist> findAll() {
         return new ArrayList<>(receptionists.values());
@@ -20,10 +24,9 @@ public class ReceptionistRepository {
     }
 
     public Receptionist save(Receptionist receptionist) {
-        if (receptionists.containsKey(receptionist.getId())) {
+        if (receptionists.putIfAbsent(receptionist.getId(), receptionist) != null) {
             throw new ReceptionistConflictException(receptionist.getId());
         }
-        receptionists.put(receptionist.getId(), receptionist);
         return receptionist;
     }
 

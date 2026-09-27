@@ -4,12 +4,16 @@ import lab.java.demo.Models.Nurse;
 import lab.java.demo.exception.NurseConflictException;
 import org.springframework.stereotype.Repository;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Repository
 public class NurseRepository {
 
-    private final Map<Integer, Nurse> nurses = new HashMap<>();
+    private final Map<Integer, Nurse> nurses = new ConcurrentHashMap<>();
 
     public List<Nurse> findAll() {
         return new ArrayList<>(nurses.values());
@@ -20,10 +24,9 @@ public class NurseRepository {
     }
 
     public Nurse save(Nurse nurse) {
-        if (nurses.containsKey(nurse.getId())) {
+        if (nurses.putIfAbsent(nurse.getId(), nurse) != null) {
             throw new NurseConflictException(nurse.getId());
         }
-        nurses.put(nurse.getId(), nurse);
         return nurse;
     }
 

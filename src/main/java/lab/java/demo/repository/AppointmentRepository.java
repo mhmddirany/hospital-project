@@ -2,10 +2,10 @@ package lab.java.demo.repository;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Repository;
@@ -18,8 +18,8 @@ import lab.java.demo.Models.Appointment;
 @Repository
 public class AppointmentRepository {
 
-    // Internal storage using Map and List
-    private final Map<Integer, Appointment> appointments = new HashMap<>();
+    // Internal storage using a thread-safe map, safe for concurrent reads/writes
+    private final Map<Integer, Appointment> appointments = new ConcurrentHashMap<>();
 
     public List<Appointment> findAll() {
         return new ArrayList<>(appointments.values());

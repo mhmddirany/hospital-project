@@ -1,10 +1,10 @@
 package lab.java.demo.repository;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.stereotype.Repository;
 
@@ -17,7 +17,7 @@ import lab.java.demo.exception.DoctorConflictException;
 @Repository
 public class DoctorRepository {
 
-    private final Map<Integer, Doctor> doctors = new HashMap<>();
+    private final Map<Integer, Doctor> doctors = new ConcurrentHashMap<>();
 
     public List<Doctor> findAll() {
         return new ArrayList<>(doctors.values());
@@ -28,10 +28,9 @@ public class DoctorRepository {
     }
 
     public Doctor save(Doctor doctor) {
-        if (doctors.containsKey(doctor.getId())) {
+        if (doctors.putIfAbsent(doctor.getId(), doctor) != null) {
             throw new DoctorConflictException(doctor.getId());
         }
-        doctors.put(doctor.getId(), doctor);
         return doctor;
     }
 
