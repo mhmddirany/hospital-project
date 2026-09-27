@@ -122,7 +122,11 @@ public class AppointmentService {
 
         for (Appointment appt : appointmentRepository.findAll()) {
             LocalDateTime dateTime = appt.getDateTime();
-            if (!dateTime.isBefore(windowStart) && dateTime.isBefore(windowEnd)) {
+            boolean inWindow = !dateTime.isBefore(windowStart) && dateTime.isBefore(windowEnd);
+            // Only confirmed appointments get reminded -- a cancelled or
+            // still-requested appointment in the same time window shouldn't
+            // prompt the patient to show up.
+            if (inWindow && appt.getStatus() == AppointmentStatus.CONFIRMED) {
                 log.debug("Sending reminder for appointment id={}", appt.getId());
                 appt.remind(notifiers);
             }
