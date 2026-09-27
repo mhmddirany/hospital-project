@@ -24,12 +24,12 @@ public class Nurse extends Employee implements Comparable<Nurse> {
     public boolean isAvailability() { return availability; }
     public void setAvailability(boolean availability) { this.availability = availability; }
 
-    public void recordVitals(int patientId) {}
-    public void triageAssessment(int patientId) {}
-    public boolean addNursingNote(int patientId, String note) { return true; }
-    public boolean checkIn(int patientId, int apptId) { return true; }
-    public boolean checkOut(int patientId, int apptId) { return true; }
-    public boolean acceptTask(int taskId) { return true; }
+    // Issue 19: recordVitals/triageAssessment/addNursingNote/checkIn/
+    // checkOut/acceptTask used to live here as stubs that always returned
+    // true (or did nothing) without recording anything -- there was never
+    // a vitals/triage/notes/task repository or service backing them.
+    // Removed rather than faked; add them back for real once that data
+    // actually has somewhere to live.
 
     // ---------- equals / hashCode / Comparable ----------
 

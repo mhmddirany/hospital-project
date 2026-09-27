@@ -1,6 +1,5 @@
 package lab.java.demo.Models;
 
-import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -28,10 +27,13 @@ public class Patient implements Comparable<Patient> {
     public void setAge(int age) { this.age = age; }
     public MedicalRecord getMedicalRecord() { return medicalRecord; }
 
-    public boolean register() { return true; }
-    public boolean login() { return true; }
-
-    public List<Doctor> searchDoctor() { return List.of(); }
+    // Issue 19: register()/login() used to live here as stubs that always
+    // returned true without checking or storing anything -- there is no
+    // authentication system yet (that's Issue 21). searchDoctor() used to
+    // always return an empty list; real doctor search already exists at
+    // DoctorService.findBySpecialty(...) / GET /api/doctors/specialty/{s},
+    // so the empty-list stub here was redundant as well as dishonest.
+    // Removed rather than faked.
 
     @Override
     public boolean equals(Object o) {

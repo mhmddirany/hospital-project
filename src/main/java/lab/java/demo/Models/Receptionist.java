@@ -20,7 +20,11 @@ public class Receptionist extends Employee implements Comparable<Receptionist> {
     public boolean isAvailability() { return availability; }
     public void setAvailability(boolean availability) { this.availability = availability; }
 
-    public boolean checkAvailability(int doctorId) { return true; }
+    // Issue 19: checkAvailability(doctorId) used to live here as a stub
+    // that always returned true without looking at the doctor at all.
+    // Availability is Doctor's data, not something a Receptionist should
+    // compute itself -- real callers now use
+    // DoctorService.isAvailable(doctorId) / GET /api/doctors/{id}/availability.
 
     @Override
     public boolean equals(Object o) {

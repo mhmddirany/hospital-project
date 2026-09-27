@@ -63,4 +63,10 @@ public class DoctorController {
                 .toList();
         return new ApiResponse<>("All doctors sorted by specialty then name", result);
     }
+
+    @GetMapping("/{id}/availability")
+    public ApiResponse<Boolean> checkAvailability(@PathVariable int id) {
+        boolean available = doctorService.isAvailable(id);
+        return new ApiResponse<>("Availability for doctor id " + id, available);
+    }
 }

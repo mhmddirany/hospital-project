@@ -70,4 +70,14 @@ public class DoctorService extends BaseCrudService<Doctor, Integer> {
         list.sort(DoctorComparators.bySpecialtyThenName());
         return list;
     }
+
+    /**
+     * Real backing for "is this doctor available" (Issue 19). Previously
+     * Receptionist.checkAvailability(doctorId) claimed to check this and
+     * always returned true. Availability is data on Doctor, so it's looked
+     * up here instead of an entity method faking the answer.
+     */
+    public boolean isAvailable(int doctorId) {
+        return getByIdOrThrow(doctorId).isAvailability();
+    }
 }
