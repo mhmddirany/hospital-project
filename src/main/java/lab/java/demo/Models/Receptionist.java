@@ -1,6 +1,5 @@
 package lab.java.demo.Models;
 
-import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -21,14 +20,6 @@ public class Receptionist extends Employee implements Comparable<Receptionist> {
     public boolean isAvailability() { return availability; }
     public void setAvailability(boolean availability) { this.availability = availability; }
 
-    public Appointment scheduleAppointment(int patientId, int doctorId, LocalDateTime dateTime,
-                                           Patient patient, Doctor doctor) {
-        Appointment appt = new Appointment(Appointment.nextId(), dateTime, AppointmentStatus.REQUESTED, patient, doctor);
-        patient.addAppointment(appt);
-        return appt;
-    }
-
-    public boolean cancelAppointment(int apptId) { return true; }
     public boolean checkAvailability(int doctorId) { return true; }
 
     @Override

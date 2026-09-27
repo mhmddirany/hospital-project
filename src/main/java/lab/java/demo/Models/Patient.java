@@ -1,8 +1,5 @@
 package lab.java.demo.Models;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -15,8 +12,6 @@ public class Patient implements Comparable<Patient> {
     private int age;
 
     private final MedicalRecord medicalRecord = new MedicalRecord();
-
-    private final List<Appointment> appointments = new ArrayList<>();
 
     public Patient(int id, String name, int age) {
         this.id = id;
@@ -37,24 +32,6 @@ public class Patient implements Comparable<Patient> {
     public boolean login() { return true; }
 
     public List<Doctor> searchDoctor() { return List.of(); }
-
-    public Appointment bookAppointment(int doctorId, LocalDateTime dateTime, Doctor doctor) {
-        Appointment appt = new Appointment(Appointment.nextId(), dateTime, AppointmentStatus.REQUESTED, this, doctor);
-        appointments.add(appt);
-        return appt;
-    }
-
-    public boolean cancelAppointment(int appointmentId) {
-        for (Appointment a : appointments) {
-            if (a.getId() == appointmentId) {
-                return a.cancel();
-            }
-        }
-        return false;
-    }
-
-    public List<Appointment> getAppointments() { return Collections.unmodifiableList(appointments); }
-    void addAppointment(Appointment appt) { appointments.add(appt); }
 
     @Override
     public boolean equals(Object o) {

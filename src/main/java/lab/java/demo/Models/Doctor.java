@@ -29,9 +29,6 @@ public class Doctor extends Employee implements Comparable<Doctor> {
     public boolean isAvailability() { return availability; }
     public void setAvailability(boolean availability) { this.availability = availability; }
 
-    public boolean approveAppointment(int apptId) { return true; }
-    public boolean rejectAppointment(int apptId) { return true; }
-
     public List<Patient> viewPatients() { return Collections.unmodifiableList(primaryCarePatients); }
     public void addPatientToPanel(Patient p) { primaryCarePatients.add(p); }
 
