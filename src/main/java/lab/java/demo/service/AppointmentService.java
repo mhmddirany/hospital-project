@@ -12,8 +12,11 @@ import org.springframework.stereotype.Service;
 import lab.java.demo.Models.Appointment;
 import lab.java.demo.Models.AppointmentStatus;
 import lab.java.demo.Models.Doctor;
+import lab.java.demo.Models.EmailNotifier;
 import lab.java.demo.Models.Notifier;
+import lab.java.demo.Models.NotificationChannel;
 import lab.java.demo.Models.Patient;
+import lab.java.demo.Models.SMSNotifier;
 import lab.java.demo.exception.AppointmentConflictException;
 import lab.java.demo.exception.AppointmentNotFoundException;
 import lab.java.demo.exception.DoctorNotFoundException;
@@ -110,7 +113,32 @@ public class AppointmentService {
         return appts;
     }
 
-    public void sendRemindersForTomorrow(List<Notifier> notifiers) {
+    /**
+     * Public API entry point: clients pick from the closed set of supported
+     * channels rather than submitting a List<Notifier> in the request body,
+     * which Jackson can never deserialize (Notifier is an interface, so it
+     * has no way to know which implementation each JSON object should
+     * become) and which would let a client instantiate/select internal
+     * notification services directly even if it could.
+     */
+    public void sendRemindersForTomorrow(List<NotificationChannel> channels) {
+        if (channels == null || channels.isEmpty()) {
+            throw new IllegalArgumentException("channels must not be empty");
+        }
+        List<Notifier> notifiers = channels.stream()
+                .distinct()
+                .map(AppointmentService::toNotifier)
+                .toList();
+        remindAppointmentsTomorrow(notifiers);
+    }
+
+    /**
+     * The actual reminder logic, operating on resolved Notifier instances.
+     * Kept separate from sendRemindersForTomorrow(List<NotificationChannel>)
+     * so it can be exercised directly with a test double instead of a real
+     * (printing) EmailNotifier/SMSNotifier.
+     */
+    public void remindAppointmentsTomorrow(List<Notifier> notifiers) {
         // "Tomorrow" means the next calendar day, not now..now+24h -- running
         // this at 3pm should not catch today's 4pm appointment or miss
         // tomorrow's 2pm one. Half-open window: [start of tomorrow, start of
@@ -131,6 +159,13 @@ public class AppointmentService {
                 appt.remind(notifiers);
             }
         }
+    }
+
+    private static Notifier toNotifier(NotificationChannel channel) {
+        return switch (channel) {
+            case EMAIL -> new EmailNotifier();
+            case SMS -> new SMSNotifier();
+        };
     }
 
     public List<Appointment> getAllAppointmentsSortedByDoctorThenDate() {

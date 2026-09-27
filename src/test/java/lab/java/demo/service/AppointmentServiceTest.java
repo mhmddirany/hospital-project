@@ -2,6 +2,7 @@ package lab.java.demo.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.LocalDate;
@@ -15,6 +16,7 @@ import org.junit.jupiter.api.Test;
 
 import lab.java.demo.Models.Appointment;
 import lab.java.demo.Models.Doctor;
+import lab.java.demo.Models.NotificationChannel;
 import lab.java.demo.Models.Notifier;
 import lab.java.demo.Models.Patient;
 import lab.java.demo.repository.AppointmentRepository;
@@ -74,7 +76,7 @@ class AppointmentServiceTest {
         // left as REQUESTED -- never confirmed
 
         RecordingNotifier notifier = new RecordingNotifier();
-        appointmentService.sendRemindersForTomorrow(List.of(notifier));
+        appointmentService.remindAppointmentsTomorrow(List.of(notifier));
 
         assertEquals(1, notifier.remindedAppointmentIds.size());
         assertTrue(notifier.remindedAppointmentIds.contains(confirmed.getId()));
@@ -93,8 +95,27 @@ class AppointmentServiceTest {
         appointmentService.confirmAppointment(confirmedLater.getId());
 
         RecordingNotifier notifier = new RecordingNotifier();
-        appointmentService.sendRemindersForTomorrow(List.of(notifier));
+        appointmentService.remindAppointmentsTomorrow(List.of(notifier));
 
         assertTrue(notifier.remindedAppointmentIds.isEmpty());
+    }
+
+    @Test
+    void rejectsEmptyOrMissingChannels() {
+        assertThrows(IllegalArgumentException.class,
+                () -> appointmentService.sendRemindersForTomorrow(List.of()));
+        assertThrows(IllegalArgumentException.class,
+                () -> appointmentService.sendRemindersForTomorrow(null));
+    }
+
+    @Test
+    void resolvesEachRequestedChannelToItsNotifierWithoutError() {
+        Appointment confirmed = appointmentService.createAppointment(patient.getId(), doctor.getId(), tomorrowAt(9));
+        appointmentService.confirmAppointment(confirmed.getId());
+
+        // EMAIL/SMS resolve to the real EmailNotifier/SMSNotifier (they just
+        // print today -- see Issue 16); this only asserts the channel-based
+        // entry point wires up and runs end to end without throwing.
+        appointmentService.sendRemindersForTomorrow(List.of(NotificationChannel.EMAIL, NotificationChannel.SMS));
     }
 }

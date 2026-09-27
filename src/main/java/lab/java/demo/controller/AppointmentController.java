@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import lab.java.demo.Models.Appointment;
-import lab.java.demo.Models.Notifier;
+import lab.java.demo.Models.NotificationChannel;
 import lab.java.demo.dto.ApiResponse;
 import lab.java.demo.dto.AppointmentRequest;
 import lab.java.demo.dto.AppointmentResponse;
@@ -65,8 +65,8 @@ public class AppointmentController {
     }
 
     @PostMapping("/reminders/tomorrow")
-    public ApiResponse<Void> sendRemindersForTomorrow(@RequestBody List<Notifier> notifiers) {
-        appointmentService.sendRemindersForTomorrow(notifiers);
+    public ApiResponse<Void> sendRemindersForTomorrow(@RequestBody List<NotificationChannel> channels) {
+        appointmentService.sendRemindersForTomorrow(channels);
         return new ApiResponse<>("Reminders sent for tomorrow's appointments", null);
     }
 }
