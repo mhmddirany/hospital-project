@@ -73,6 +73,21 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(body);
     }
 
+    // ----- 409s -----
+
+    @ExceptionHandler(AppointmentConflictException.class)
+    public ResponseEntity<ErrorResponse> handleConflict(AppointmentConflictException ex,
+                                                        HttpServletRequest request) {
+        log.warn("Conflict at {}: {}", request.getRequestURI(), ex.getMessage());
+        ErrorResponse body = new ErrorResponse(
+                HttpStatus.CONFLICT.value(),
+                HttpStatus.CONFLICT.getReasonPhrase(),
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
+    }
+
     // ----- Fallback 500 -----
 
     @ExceptionHandler(Exception.class)
