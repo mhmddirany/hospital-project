@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -68,6 +69,23 @@ public class GlobalExceptionHandler {
                 HttpStatus.BAD_REQUEST.value(),
                 HttpStatus.BAD_REQUEST.getReasonPhrase(),
                 message,
+                request.getRequestURI()
+        );
+        return ResponseEntity.badRequest().body(body);
+    }
+
+    // A missing/unparsable field in the request body (e.g. an appointment
+    // dateTime that isn't valid ISO-8601) fails during JSON deserialization,
+    // before @Valid even runs -- catch it here instead of letting it fall
+    // through to the generic 500 handler below.
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleMalformedBody(HttpMessageNotReadableException ex,
+                                                              HttpServletRequest request) {
+        log.warn("Malformed request body at {}: {}", request.getRequestURI(), ex.getMessage());
+        ErrorResponse body = new ErrorResponse(
+                HttpStatus.BAD_REQUEST.value(),
+                HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                "Request body is missing a required field or contains an unparsable value",
                 request.getRequestURI()
         );
         return ResponseEntity.badRequest().body(body);
