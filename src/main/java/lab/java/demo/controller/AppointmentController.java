@@ -31,7 +31,7 @@ public class AppointmentController {
     @PostMapping
     public ApiResponse<Appointment> requestAppointment(@Valid @RequestBody AppointmentRequest request) {
         Appointment appt = appointmentService.createAppointment(
-                request.getPatient(), request.getDoctor(), request.getDateTime());
+                request.getPatientId(), request.getDoctorId(), request.getDateTime());
         return new ApiResponse<>("Appointment requested", appt);
     }
 

@@ -2,29 +2,27 @@ package lab.java.demo.dto;
 
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotNull;
-
-import lab.java.demo.Models.Doctor;
-import lab.java.demo.Models.Patient;
+import jakarta.validation.constraints.Positive;
 
 import java.time.LocalDateTime;
 
 public class AppointmentRequest {
 
-    @NotNull(message = "patient must not be null")
-    private Patient patient;
+    @Positive(message = "patientId must be a positive number")
+    private int patientId;
 
-    @NotNull(message = "doctor must not be null")
-    private Doctor doctor;
+    @Positive(message = "doctorId must be a positive number")
+    private int doctorId;
 
     @NotNull(message = "dateTime must not be null")
     @Future(message = "dateTime must be in the future")
     private LocalDateTime dateTime;
 
-    public Patient getPatient() { return patient; }
-    public void setPatient(Patient patient) { this.patient = patient; }
+    public int getPatientId() { return patientId; }
+    public void setPatientId(int patientId) { this.patientId = patientId; }
 
-    public Doctor getDoctor() { return doctor; }
-    public void setDoctor(Doctor doctor) { this.doctor = doctor; }
+    public int getDoctorId() { return doctorId; }
+    public void setDoctorId(int doctorId) { this.doctorId = doctorId; }
 
     public LocalDateTime getDateTime() { return dateTime; }
     public void setDateTime(LocalDateTime dateTime) { this.dateTime = dateTime; }

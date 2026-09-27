@@ -13,6 +13,7 @@ import lab.java.demo.Models.Doctor;
 import lab.java.demo.Models.Notifier;
 import lab.java.demo.Models.Patient;
 import lab.java.demo.exception.AppointmentNotFoundException;
+import lab.java.demo.exception.DoctorNotFoundException;
 import lab.java.demo.exception.InvalidAppointmentException;
 import lab.java.demo.repository.AppointmentRepository;
 import lab.java.demo.util.AppointmentComparators;
@@ -23,18 +24,25 @@ public class AppointmentService {
     private static final Logger log = LoggerFactory.getLogger(AppointmentService.class);
 
     private final AppointmentRepository appointmentRepository;
+    private final PatientService patientService;
+    private final DoctorService doctorService;
 
-    public AppointmentService(AppointmentRepository appointmentRepository) {
+    public AppointmentService(AppointmentRepository appointmentRepository,
+                               PatientService patientService,
+                               DoctorService doctorService) {
         this.appointmentRepository = appointmentRepository;
+        this.patientService = patientService;
+        this.doctorService = doctorService;
     }
 
-    public Appointment createAppointment(Patient patient, Doctor doctor, LocalDateTime dateTime) {
-        if (patient == null || doctor == null) {
-            throw new InvalidAppointmentException("Patient and doctor must not be null");
-        }
+    public Appointment createAppointment(int patientId, int doctorId, LocalDateTime dateTime) {
         if (dateTime == null || dateTime.isBefore(LocalDateTime.now())) {
             throw new InvalidAppointmentException("Appointment date/time must be in the future");
         }
+
+        Patient patient = patientService.getByIdOrThrow(patientId);
+        Doctor doctor = doctorService.findById(doctorId)
+                .orElseThrow(() -> new DoctorNotFoundException(doctorId));
 
         Appointment appt = new Appointment(
                 Appointment.nextId(),
