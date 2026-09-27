@@ -12,6 +12,7 @@ import lab.java.demo.Models.AppointmentStatus;
 import lab.java.demo.Models.Doctor;
 import lab.java.demo.Models.Notifier;
 import lab.java.demo.Models.Patient;
+import lab.java.demo.exception.AppointmentConflictException;
 import lab.java.demo.exception.AppointmentNotFoundException;
 import lab.java.demo.exception.DoctorNotFoundException;
 import lab.java.demo.exception.InvalidAppointmentException;
@@ -43,6 +44,13 @@ public class AppointmentService {
         Patient patient = patientService.getByIdOrThrow(patientId);
         Doctor doctor = doctorService.findById(doctorId)
                 .orElseThrow(() -> new DoctorNotFoundException(doctorId));
+
+        boolean doctorAlreadyBooked = appointmentRepository.findByDoctorId(doctor.getId()).stream()
+                .anyMatch(existing -> existing.getStatus() != AppointmentStatus.CANCELED
+                        && existing.getDateTime().isEqual(dateTime));
+        if (doctorAlreadyBooked) {
+            throw new AppointmentConflictException(doctor.getId(), dateTime.toString());
+        }
 
         Appointment appt = new Appointment(
                 Appointment.nextId(),
