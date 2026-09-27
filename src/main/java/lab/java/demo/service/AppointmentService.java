@@ -12,11 +12,11 @@ import org.springframework.stereotype.Service;
 import lab.java.demo.Models.Appointment;
 import lab.java.demo.Models.AppointmentStatus;
 import lab.java.demo.Models.Doctor;
-import lab.java.demo.Models.EmailNotifier;
+import lab.java.demo.Models.ConsoleEmailNotifier;
 import lab.java.demo.Models.Notifier;
 import lab.java.demo.Models.NotificationChannel;
 import lab.java.demo.Models.Patient;
-import lab.java.demo.Models.SMSNotifier;
+import lab.java.demo.Models.ConsoleSMSNotifier;
 import lab.java.demo.exception.AppointmentConflictException;
 import lab.java.demo.exception.AppointmentNotFoundException;
 import lab.java.demo.exception.DoctorNotFoundException;
@@ -136,7 +136,7 @@ public class AppointmentService {
      * The actual reminder logic, operating on resolved Notifier instances.
      * Kept separate from sendRemindersForTomorrow(List<NotificationChannel>)
      * so it can be exercised directly with a test double instead of a real
-     * (printing) EmailNotifier/SMSNotifier.
+     * (printing) ConsoleEmailNotifier/ConsoleSMSNotifier.
      */
     public void remindAppointmentsTomorrow(List<Notifier> notifiers) {
         // "Tomorrow" means the next calendar day, not now..now+24h -- running
@@ -163,8 +163,8 @@ public class AppointmentService {
 
     private static Notifier toNotifier(NotificationChannel channel) {
         return switch (channel) {
-            case EMAIL -> new EmailNotifier();
-            case SMS -> new SMSNotifier();
+            case EMAIL -> new ConsoleEmailNotifier();
+            case SMS -> new ConsoleSMSNotifier();
         };
     }
 

@@ -113,9 +113,10 @@ class AppointmentServiceTest {
         Appointment confirmed = appointmentService.createAppointment(patient.getId(), doctor.getId(), tomorrowAt(9));
         appointmentService.confirmAppointment(confirmed.getId());
 
-        // EMAIL/SMS resolve to the real EmailNotifier/SMSNotifier (they just
-        // print today -- see Issue 16); this only asserts the channel-based
-        // entry point wires up and runs end to end without throwing.
+        // EMAIL/SMS resolve to ConsoleEmailNotifier/ConsoleSMSNotifier, which
+        // just print (Issue 16 renamed them to be honest about that); this
+        // only asserts the channel-based entry point wires up and runs end
+        // to end without throwing.
         appointmentService.sendRemindersForTomorrow(List.of(NotificationChannel.EMAIL, NotificationChannel.SMS));
     }
 }
