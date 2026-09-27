@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import lab.java.demo.exception.InvalidAppointmentException;
+import lab.java.demo.exception.InvalidAppointmentTransitionException;
 
 public class Appointment implements Comparable<Appointment> {
     private static final AtomicInteger ID = new AtomicInteger(1);
@@ -35,20 +35,23 @@ public class Appointment implements Comparable<Appointment> {
     public Doctor getDoctor() { return doctor; }
 
     public boolean confirm() {
-        if (status == AppointmentStatus.CANCELED) {
-            throw new InvalidAppointmentException(
-                    "Cannot confirm appointment #" + id + " because it has already been canceled");
+        if (dateTime.isBefore(LocalDateTime.now())) {
+            throw new InvalidAppointmentTransitionException(id, "cannot confirm a past appointment");
         }
-        if (status == AppointmentStatus.CONFIRMED) {
-            return false;
+        if (status != AppointmentStatus.REQUESTED) {
+            throw new InvalidAppointmentTransitionException(id,
+                    "cannot confirm from status " + status);
         }
         this.status = AppointmentStatus.CONFIRMED;
         return true;
     }
 
     public boolean cancel() {
+        if (dateTime.isBefore(LocalDateTime.now())) {
+            throw new InvalidAppointmentTransitionException(id, "cannot cancel a past appointment");
+        }
         if (status == AppointmentStatus.CANCELED) {
-            return false;
+            throw new InvalidAppointmentTransitionException(id, "already canceled");
         }
         this.status = AppointmentStatus.CANCELED;
         return true;

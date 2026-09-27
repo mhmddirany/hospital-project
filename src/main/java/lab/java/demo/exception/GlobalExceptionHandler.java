@@ -93,8 +93,11 @@ public class GlobalExceptionHandler {
 
     // ----- 409s -----
 
-    @ExceptionHandler(AppointmentConflictException.class)
-    public ResponseEntity<ErrorResponse> handleConflict(AppointmentConflictException ex,
+    @ExceptionHandler({
+            AppointmentConflictException.class,
+            InvalidAppointmentTransitionException.class
+    })
+    public ResponseEntity<ErrorResponse> handleConflict(RuntimeException ex,
                                                         HttpServletRequest request) {
         log.warn("Conflict at {}: {}", request.getRequestURI(), ex.getMessage());
         ErrorResponse body = new ErrorResponse(
