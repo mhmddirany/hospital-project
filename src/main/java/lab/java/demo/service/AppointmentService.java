@@ -1,6 +1,8 @@
 package lab.java.demo.service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -23,6 +25,11 @@ import lab.java.demo.util.AppointmentComparators;
 public class AppointmentService {
 
     private static final Logger log = LoggerFactory.getLogger(AppointmentService.class);
+
+    // Explicit zone for "tomorrow" -- reminders are about calendar days for
+    // this clinic, not an implicit JVM default that could differ by
+    // deployment environment.
+    private static final ZoneId REMINDER_ZONE = ZoneId.systemDefault();
 
     private final AppointmentRepository appointmentRepository;
     private final PatientService patientService;
@@ -104,12 +111,18 @@ public class AppointmentService {
     }
 
     public void sendRemindersForTomorrow(List<Notifier> notifiers) {
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime tomorrow = now.plusDays(1);
-        log.info("Sending reminders for appointments between {} and {}", now, tomorrow);
+        // "Tomorrow" means the next calendar day, not now..now+24h -- running
+        // this at 3pm should not catch today's 4pm appointment or miss
+        // tomorrow's 2pm one. Half-open window: [start of tomorrow, start of
+        // the day after tomorrow).
+        LocalDate tomorrow = LocalDate.now(REMINDER_ZONE).plusDays(1);
+        LocalDateTime windowStart = tomorrow.atStartOfDay();
+        LocalDateTime windowEnd = tomorrow.plusDays(1).atStartOfDay();
+        log.info("Sending reminders for appointments in [{}, {})", windowStart, windowEnd);
 
         for (Appointment appt : appointmentRepository.findAll()) {
-            if (appt.getDateTime().isAfter(now) && appt.getDateTime().isBefore(tomorrow)) {
+            LocalDateTime dateTime = appt.getDateTime();
+            if (!dateTime.isBefore(windowStart) && dateTime.isBefore(windowEnd)) {
                 log.debug("Sending reminder for appointment id={}", appt.getId());
                 appt.remind(notifiers);
             }
