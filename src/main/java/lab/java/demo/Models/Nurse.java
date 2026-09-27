@@ -1,8 +1,11 @@
 package lab.java.demo.Models;
 
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class Nurse extends Employee implements Comparable<Nurse> {
+    private static final AtomicInteger ID = new AtomicInteger(1);
+
     private final int id;
     private String department;
     private boolean availability = true;
@@ -12,6 +15,8 @@ public class Nurse extends Employee implements Comparable<Nurse> {
         this.id = id;
         this.department = department;
     }
+
+    public static int nextId() { return ID.getAndIncrement(); }
 
     public int getId() { return id; }
     public String getDepartment() { return department; }

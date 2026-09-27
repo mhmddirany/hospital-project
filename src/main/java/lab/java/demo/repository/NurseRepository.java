@@ -1,6 +1,7 @@
 package lab.java.demo.repository;
 
 import lab.java.demo.Models.Nurse;
+import lab.java.demo.exception.NurseConflictException;
 import org.springframework.stereotype.Repository;
 
 import java.util.*;
@@ -19,6 +20,9 @@ public class NurseRepository {
     }
 
     public Nurse save(Nurse nurse) {
+        if (nurses.containsKey(nurse.getId())) {
+            throw new NurseConflictException(nurse.getId());
+        }
         nurses.put(nurse.getId(), nurse);
         return nurse;
     }

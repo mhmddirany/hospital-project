@@ -22,7 +22,7 @@ public class PatientController {
 
     @PostMapping
     public ApiResponse<Patient> register(@Valid @RequestBody PatientRequest request) {
-        Patient patient = new Patient(request.getId(), request.getName(), request.getAge());
+        Patient patient = new Patient(Patient.nextId(), request.getName(), request.getAge());
         Patient saved = patientService.registerPatient(patient);
         return new ApiResponse<>("Patient registered successfully", saved);
     }

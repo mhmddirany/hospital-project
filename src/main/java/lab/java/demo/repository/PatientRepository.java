@@ -1,6 +1,7 @@
 package lab.java.demo.repository;
 
 import lab.java.demo.Models.Patient;
+import lab.java.demo.exception.PatientConflictException;
 import org.springframework.stereotype.Repository;
 
 import java.util.*;
@@ -19,6 +20,9 @@ public class PatientRepository {
     }
 
     public Patient save(Patient patient) {
+        if (patients.containsKey(patient.getId())) {
+            throw new PatientConflictException(patient.getId());
+        }
         patients.put(patient.getId(), patient);
         return patient;
     }

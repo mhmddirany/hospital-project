@@ -2,8 +2,11 @@ package lab.java.demo.Models;
 
 import java.time.LocalDateTime;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class Receptionist extends Employee implements Comparable<Receptionist> {
+    private static final AtomicInteger ID = new AtomicInteger(1);
+
     private final int id;
     private boolean availability = true;
 
@@ -11,6 +14,8 @@ public class Receptionist extends Employee implements Comparable<Receptionist> {
         super(name, age);
         this.id = id;
     }
+
+    public static int nextId() { return ID.getAndIncrement(); }
 
     public int getId() { return id; }
     public boolean isAvailability() { return availability; }

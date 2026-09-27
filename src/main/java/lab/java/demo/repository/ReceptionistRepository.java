@@ -1,6 +1,7 @@
 package lab.java.demo.repository;
 
 import lab.java.demo.Models.Receptionist;
+import lab.java.demo.exception.ReceptionistConflictException;
 import org.springframework.stereotype.Repository;
 
 import java.util.*;
@@ -19,6 +20,9 @@ public class ReceptionistRepository {
     }
 
     public Receptionist save(Receptionist receptionist) {
+        if (receptionists.containsKey(receptionist.getId())) {
+            throw new ReceptionistConflictException(receptionist.getId());
+        }
         receptionists.put(receptionist.getId(), receptionist);
         return receptionist;
     }

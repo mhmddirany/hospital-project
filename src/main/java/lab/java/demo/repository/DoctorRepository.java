@@ -9,6 +9,7 @@ import java.util.Optional;
 import org.springframework.stereotype.Repository;
 
 import lab.java.demo.Models.Doctor;
+import lab.java.demo.exception.DoctorConflictException;
 
 /**
  * Repository for Doctor objects.
@@ -27,6 +28,9 @@ public class DoctorRepository {
     }
 
     public Doctor save(Doctor doctor) {
+        if (doctors.containsKey(doctor.getId())) {
+            throw new DoctorConflictException(doctor.getId());
+        }
         doctors.put(doctor.getId(), doctor);
         return doctor;
     }

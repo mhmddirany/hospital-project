@@ -5,8 +5,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class Patient implements Comparable<Patient> {
+    private static final AtomicInteger ID = new AtomicInteger(1);
+
     private final int id;
     private String name;
     private int age;
@@ -20,6 +23,8 @@ public class Patient implements Comparable<Patient> {
         this.name = name;
         this.age = age;
     }
+
+    public static int nextId() { return ID.getAndIncrement(); }
 
     public int getId() { return id; }
     public String getName() { return name; }
