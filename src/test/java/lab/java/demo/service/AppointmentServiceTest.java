@@ -15,10 +15,17 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import lab.java.demo.Models.Appointment;
+import lab.java.demo.Models.AppointmentStatus;
 import lab.java.demo.Models.Doctor;
 import lab.java.demo.Models.NotificationChannel;
 import lab.java.demo.Models.Notifier;
 import lab.java.demo.Models.Patient;
+import lab.java.demo.exception.AppointmentConflictException;
+import lab.java.demo.exception.AppointmentNotFoundException;
+import lab.java.demo.exception.DoctorNotFoundException;
+import lab.java.demo.exception.InvalidAppointmentException;
+import lab.java.demo.exception.InvalidAppointmentTransitionException;
+import lab.java.demo.exception.PatientNotFoundException;
 import lab.java.demo.repository.AppointmentRepository;
 import lab.java.demo.repository.DoctorRepository;
 import lab.java.demo.repository.PatientRepository;
@@ -32,6 +39,8 @@ import lab.java.demo.repository.PatientRepository;
 class AppointmentServiceTest {
 
     private AppointmentService appointmentService;
+    private PatientService patientService;
+    private DoctorService doctorService;
     private Patient patient;
     private Doctor doctor;
 
@@ -52,8 +61,8 @@ class AppointmentServiceTest {
         DoctorRepository doctorRepository = new DoctorRepository();
         AppointmentRepository appointmentRepository = new AppointmentRepository();
 
-        PatientService patientService = new PatientService(patientRepository);
-        DoctorService doctorService = new DoctorService(doctorRepository);
+        patientService = new PatientService(patientRepository);
+        doctorService = new DoctorService(doctorRepository);
         appointmentService = new AppointmentService(appointmentRepository, patientService, doctorService);
 
         patient = patientService.registerPatient(new Patient(Patient.nextId(), "Alex Rivera", 40));
@@ -118,5 +127,126 @@ class AppointmentServiceTest {
         // only asserts the channel-based entry point wires up and runs end
         // to end without throwing.
         appointmentService.sendRemindersForTomorrow(List.of(NotificationChannel.EMAIL, NotificationChannel.SMS));
+    }
+
+    // ----- Issue 24: appointment creation, transitions, and lookups -----
+
+    @Test
+    void createAppointmentSucceedsAndStartsAsRequested() {
+        Appointment appt = appointmentService.createAppointment(patient.getId(), doctor.getId(), tomorrowAt(9));
+
+        assertEquals(AppointmentStatus.REQUESTED, appt.getStatus());
+        assertEquals(patient.getId(), appt.getPatient().getId());
+        assertEquals(doctor.getId(), appt.getDoctor().getId());
+    }
+
+    @Test
+    void createAppointmentRejectsAPastDateTime() {
+        LocalDateTime yesterday = LocalDateTime.now().minusDays(1);
+
+        assertThrows(InvalidAppointmentException.class,
+                () -> appointmentService.createAppointment(patient.getId(), doctor.getId(), yesterday));
+    }
+
+    @Test
+    void createAppointmentRejectsAMissingDateTime() {
+        assertThrows(InvalidAppointmentException.class,
+                () -> appointmentService.createAppointment(patient.getId(), doctor.getId(), null));
+    }
+
+    @Test
+    void createAppointmentRejectsAnUnknownPatient() {
+        assertThrows(PatientNotFoundException.class,
+                () -> appointmentService.createAppointment(404, doctor.getId(), tomorrowAt(9)));
+    }
+
+    @Test
+    void createAppointmentRejectsAnUnknownDoctor() {
+        assertThrows(DoctorNotFoundException.class,
+                () -> appointmentService.createAppointment(patient.getId(), 404, tomorrowAt(9)));
+    }
+
+    @Test
+    void createAppointmentRejectsDoubleBookingTheSameDoctorAtTheSameTime() {
+        // Issue 3: AppointmentConflictException existed but was never thrown.
+        LocalDateTime slot = tomorrowAt(9);
+        appointmentService.createAppointment(patient.getId(), doctor.getId(), slot);
+
+        assertThrows(AppointmentConflictException.class,
+                () -> appointmentService.createAppointment(patient.getId(), doctor.getId(), slot));
+    }
+
+    @Test
+    void doubleBookingCheckIgnoresCancelledAppointments() {
+        LocalDateTime slot = tomorrowAt(9);
+        Appointment first = appointmentService.createAppointment(patient.getId(), doctor.getId(), slot);
+        appointmentService.cancelAppointment(first.getId());
+
+        // A cancelled slot frees up the doctor -- this should succeed, not
+        // throw AppointmentConflictException.
+        Appointment second = appointmentService.createAppointment(patient.getId(), doctor.getId(), slot);
+        assertEquals(AppointmentStatus.REQUESTED, second.getStatus());
+    }
+
+    @Test
+    void confirmMovesARequestedAppointmentToConfirmed() {
+        Appointment appt = appointmentService.createAppointment(patient.getId(), doctor.getId(), tomorrowAt(9));
+
+        Appointment confirmed = appointmentService.confirmAppointment(appt.getId());
+        assertEquals(AppointmentStatus.CONFIRMED, confirmed.getStatus());
+    }
+
+    @Test
+    void confirmingAnAlreadyConfirmedAppointmentIsRejected() {
+        // Issue 11: confirm()/cancel() used to always succeed regardless of
+        // the current status.
+        Appointment appt = appointmentService.createAppointment(patient.getId(), doctor.getId(), tomorrowAt(9));
+        appointmentService.confirmAppointment(appt.getId());
+
+        assertThrows(InvalidAppointmentTransitionException.class,
+                () -> appointmentService.confirmAppointment(appt.getId()));
+    }
+
+    @Test
+    void cancelMovesARequestedAppointmentToCanceled() {
+        Appointment appt = appointmentService.createAppointment(patient.getId(), doctor.getId(), tomorrowAt(9));
+
+        Appointment cancelled = appointmentService.cancelAppointment(appt.getId());
+        assertEquals(AppointmentStatus.CANCELED, cancelled.getStatus());
+    }
+
+    @Test
+    void cancellingAnAlreadyCancelledAppointmentIsRejected() {
+        Appointment appt = appointmentService.createAppointment(patient.getId(), doctor.getId(), tomorrowAt(9));
+        appointmentService.cancelAppointment(appt.getId());
+
+        assertThrows(InvalidAppointmentTransitionException.class,
+                () -> appointmentService.cancelAppointment(appt.getId()));
+    }
+
+    @Test
+    void confirmingAnUnknownAppointmentThrowsNotFound() {
+        assertThrows(AppointmentNotFoundException.class, () -> appointmentService.confirmAppointment(404));
+    }
+
+    @Test
+    void getAppointmentsForPatientReturnsOnlyThatPatientsAppointments() {
+        Patient otherPatient = patientService.registerPatient(new Patient(Patient.nextId(), "Blair Chen", 30));
+        Appointment mine = appointmentService.createAppointment(patient.getId(), doctor.getId(), tomorrowAt(9));
+        appointmentService.createAppointment(otherPatient.getId(), doctor.getId(), tomorrowAt(11));
+
+        List<Appointment> result = appointmentService.getAppointmentsForPatient(patient.getId());
+        assertEquals(1, result.size());
+        assertEquals(mine.getId(), result.get(0).getId());
+    }
+
+    @Test
+    void getAppointmentsForDoctorSortedByDateOrdersEarliestFirst() {
+        Appointment later = appointmentService.createAppointment(patient.getId(), doctor.getId(), tomorrowAt(15));
+        Appointment earlier = appointmentService.createAppointment(patient.getId(), doctor.getId(), tomorrowAt(8));
+
+        List<Appointment> result = appointmentService.getAppointmentsForDoctorSortedByDate(doctor.getId());
+        assertEquals(earlier.getId(), result.get(0).getId());
+        assertEquals(later.getId(), result.get(1).getId());
     }
 }

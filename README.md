@@ -26,6 +26,24 @@ The app starts at `http://localhost:8080`.
 
 Once running, Swagger UI is available at `http://localhost:8080/swagger-ui.html`.
 
+### Authentication
+
+Every endpoint except `/`, `/error`, `/actuator/health`, and the Swagger UI
+routes requires HTTP Basic authentication (Issue 21). There is no
+registration flow yet, so the API ships with one in-memory demo account per
+role:
+
+| Username       | Password          | Role         |
+|----------------|-------------------|--------------|
+| `admin`        | `admin123`        | ADMIN        |
+| `doctor`       | `doctor123`       | DOCTOR       |
+| `nurse`        | `nurse123`        | NURSE        |
+| `receptionist` | `receptionist123` | RECEPTIONIST |
+| `patient`      | `patient123`      | PATIENT      |
+
+These are demo-only credentials for exercising the API locally, defined in
+`SecurityConfig`. What each role can reach is documented there.
+
 ## Roadmap
 
 - Wire up REST endpoints for doctors, nurses, patients, and receptionists

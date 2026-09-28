@@ -23,7 +23,12 @@ public class PatientService {
     }
 
     public Patient registerPatient(Patient patient) {
-        log.info("Registering patient name={} age={}", patient.getName(), patient.getAge());
+        // Issue 22: this used to log the patient's name and age (PII) on
+        // every registration. Logs are identifiers-only now -- the id is
+        // enough to correlate this line with the saved record, and a full
+        // name/age doesn't belong in an operational log that may be
+        // aggregated, retained, or read by anyone with log access.
+        log.info("Registering patient id={}", patient.getId());
         return patientRepository.save(patient);
     }
 
@@ -41,7 +46,10 @@ public class PatientService {
 
     public List<Patient> searchByName(String partialName) {
         List<Patient> result = patientRepository.findByNameContainingIgnoreCase(partialName);
-        log.debug("Found {} patients matching name '{}'", result.size(), partialName);
+        // Issue 22: the search term is itself patient-identifying (it's
+        // often literally a patient's name), so it's left out of the log
+        // line even at DEBUG -- the match count is enough to debug this.
+        log.debug("Found {} patients matching a name search", result.size());
         return result;
     }
 
