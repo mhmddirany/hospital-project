@@ -7,58 +7,68 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
-import org.springframework.security.web.AuthenticationEntryPoint;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lab.java.demo.dto.ErrorResponse;
+import lab.java.demo.security.JwtAuthenticationFilter;
 
 /**
- * Issue 21: the application had no Spring Security dependency and no
- * authorization rules at all -- every endpoint, including patient
- * demographics and appointment data, was reachable by anyone who could
- * reach the port. This wires up HTTP Basic authentication plus role-based
- * authorization for five roles: ADMIN, DOCTOR, NURSE, RECEPTIONIST, and
- * PATIENT.
+ * Issue 21: role-based authorization for five roles (ADMIN, DOCTOR,
+ * NURSE, RECEPTIONIST, PATIENT), same as before. What changed is how a
+ * caller proves who they are.
  *
- * <p>Accounts live in an {@link InMemoryUserDetailsManager} rather than a
- * real user store, consistent with the rest of this project: every
- * repository here is an in-memory {@code ConcurrentHashMap}, not a database
- * (see Issues 6 and 17). A production deployment would replace this with a
- * {@link UserDetailsService} backed by a persistent, hashed-password user
- * table and a real registration/admin-provisioning flow -- not something to
- * fake here.
+ * <p>Accounts used to live in a fixed, five-entry
+ * {@code InMemoryUserDetailsManager} with passwords written directly
+ * into this class, authenticated per-request with HTTP Basic. Per review
+ * feedback, that's replaced with:
+ * <ul>
+ *   <li>a real {@code User} entity ({@link lab.java.demo.Models.User}),
+ *       stored in {@link lab.java.demo.repository.UserRepository} -- an
+ *       in-memory {@code ConcurrentHashMap}, consistent with every other
+ *       repository in this project (see Issues 6 and 17), rather than
+ *       reintroducing a JPA/H2 database just for this;</li>
+ *   <li>a {@link lab.java.demo.security.CustomUserDetailsService} backed
+ *       by that repository, replacing {@code InMemoryUserDetailsManager};</li>
+ *   <li>BCrypt-hashed passwords (unchanged -- this app already hashed
+ *       passwords, just for a hard-coded account list);</li>
+ *   <li>user-management endpoints ({@code /api/users/**}) restricted to
+ *       ADMIN, so accounts are created by an administrator instead of
+ *       being baked into source;</li>
+ *   <li>one bootstrap ADMIN account seeded at startup from configuration
+ *       (see {@link AdminBootstrap}), solving the chicken-and-egg problem
+ *       of needing an admin account to create the first admin account;</li>
+ *   <li>stateless JWT authentication ({@code Authorization: Bearer
+ *       <token>}, issued by {@code POST /api/auth/login}) in place of
+ *       HTTP Basic, via
+ *       {@link lab.java.demo.security.JwtAuthenticationFilter} -- more
+ *       appropriate for a deployed frontend that shouldn't have to resend
+ *       a password on every request.</li>
+ * </ul>
  *
- * <p>Demo accounts (username / password / role), for exercising the API:
- * <pre>
- *   admin        / admin123        / ADMIN
- *   doctor       / doctor123       / DOCTOR
- *   nurse        / nurse123        / NURSE
- *   receptionist / receptionist123 / RECEPTIONIST
- *   patient      / patient123      / PATIENT
- * </pre>
- *
- * <p>There is deliberately no link between a PATIENT account and a specific
- * Patient entity -- no such account-to-entity relationship exists anywhere
- * in the domain model, and building one (patient self-registration/login
- * tied to a Patient id) is a separate feature, not part of this issue.
- * Because of that, PATIENT is intentionally the most restricted role: it
- * can browse doctors and request an appointment, but it cannot list or
- * read patient records or appointment histories, since there is no way yet
- * to tell "your own" record apart from anyone else's.
+ * <p>There is deliberately no link between a PATIENT account and a
+ * specific Patient entity -- no such account-to-entity relationship
+ * exists anywhere in the domain model, and building one (patient
+ * self-registration/login tied to a Patient id) is a separate feature,
+ * not part of this issue. Because of that, PATIENT is intentionally the
+ * most restricted role: it can browse doctors and request an
+ * appointment, but it cannot list or read patient records or appointment
+ * histories, since there is no way yet to tell "your own" record apart
+ * from anyone else's.
  */
 @Configuration
 @EnableWebSecurity
@@ -75,48 +85,41 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
+    /**
+     * Spring Security auto-wires a DaoAuthenticationProvider from the
+     * CustomUserDetailsService and PasswordEncoder beans (see
+     * InitializeUserDetailsBeanManagerConfigurer) as long as no
+     * AuthenticationManager/AuthenticationProvider bean is defined
+     * manually. This just exposes the resulting manager so AuthController
+     * can call authenticate() directly.
+     */
     @Bean
-    public UserDetailsService userDetailsService(PasswordEncoder encoder) {
-        InMemoryUserDetailsManager manager = new InMemoryUserDetailsManager();
-        manager.createUser(User.withUsername("admin")
-                .password(encoder.encode("admin123"))
-                .roles(ADMIN)
-                .build());
-        manager.createUser(User.withUsername("doctor")
-                .password(encoder.encode("doctor123"))
-                .roles(DOCTOR)
-                .build());
-        manager.createUser(User.withUsername("nurse")
-                .password(encoder.encode("nurse123"))
-                .roles(NURSE)
-                .build());
-        manager.createUser(User.withUsername("receptionist")
-                .password(encoder.encode("receptionist123"))
-                .roles(RECEPTIONIST)
-                .build());
-        manager.createUser(User.withUsername("patient")
-                .password(encoder.encode("patient123"))
-                .roles(PATIENT)
-                .build());
-        return manager;
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
+        return configuration.getAuthenticationManager();
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http, ObjectMapper objectMapper) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http, ObjectMapper objectMapper,
+                                            JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
         http
-            // A stateless REST API authenticated per-request with HTTP Basic
-            // has no session cookie for CSRF to forge -- CSRF protection is
-            // designed for browser/cookie-based sessions, which this API
-            // doesn't use.
+            // A stateless REST API authenticated per-request with a JWT
+            // bearer token has no session cookie for CSRF to forge --
+            // CSRF protection is designed for browser/cookie-based
+            // sessions, which this API doesn't use.
             .csrf(AbstractHttpConfigurer::disable)
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 // Public: landing message, health check, error forwarding,
-                // and API docs -- none of these expose patient or
-                // appointment data.
+                // API docs, and logging in -- none of these expose patient
+                // or appointment data.
                 .requestMatchers("/", "/error", "/actuator/health").permitAll()
                 .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                 .requestMatchers("/actuator/**").hasRole(ADMIN)
+
+                // User accounts: admin-only, same as every other
+                // onboarding endpoint below.
+                .requestMatchers("/api/users/**").hasRole(ADMIN)
 
                 // Doctors: anyone logged in can browse/search doctors and
                 // check availability -- that's needed just to book an
@@ -163,8 +166,10 @@ public class SecurityConfig {
                 // user rather than silently allowing it through.
                 .anyRequest().authenticated()
             )
-            .httpBasic(basic -> basic.authenticationEntryPoint(jsonAuthenticationEntryPoint(objectMapper)))
-            .exceptionHandling(handling -> handling.accessDeniedHandler(jsonAccessDeniedHandler(objectMapper)));
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+            .exceptionHandling(handling -> handling
+                    .authenticationEntryPoint(jsonAuthenticationEntryPoint(objectMapper))
+                    .accessDeniedHandler(jsonAccessDeniedHandler(objectMapper)));
 
         return http.build();
     }

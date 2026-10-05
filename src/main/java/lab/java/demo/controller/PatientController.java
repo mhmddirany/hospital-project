@@ -23,6 +23,10 @@ public class PatientController {
     @PostMapping
     public ApiResponse<PatientResponse> register(@Valid @RequestBody PatientRequest request) {
         Patient patient = new Patient(Patient.nextId(), request.getName(), request.getAge());
+        // Issue 16 follow-up: optional contact info, so a real
+        // email/SMS reminder provider has somewhere to send to.
+        patient.setEmail(request.getEmail());
+        patient.setPhone(request.getPhone());
         Patient saved = patientService.registerPatient(patient);
         return new ApiResponse<>("Patient registered successfully", PatientResponse.from(saved));
     }

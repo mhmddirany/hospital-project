@@ -7,6 +7,8 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import lab.java.demo.Models.Appointment;
@@ -37,13 +39,45 @@ public class AppointmentService {
     private final AppointmentRepository appointmentRepository;
     private final PatientService patientService;
     private final DoctorService doctorService;
+    private final Notifier emailNotifier;
+    private final Notifier smsNotifier;
 
+    /**
+     * Convenience constructor defaulting to the Console demo notifiers --
+     * used by plain-object unit tests (AppointmentServiceTest) that
+     * construct this service directly rather than through Spring, so
+     * they don't need to know or care about the email/SMS provider
+     * wiring below. Spring itself never uses this one (see
+     * {@code @Autowired} on the other constructor).
+     */
     public AppointmentService(AppointmentRepository appointmentRepository,
                                PatientService patientService,
                                DoctorService doctorService) {
+        this(appointmentRepository, patientService, doctorService,
+                new ConsoleEmailNotifier(), new ConsoleSMSNotifier());
+    }
+
+    /**
+     * Issue 16 follow-up: emailNotifier/smsNotifier are resolved by
+     * Spring from whichever bean is registered under the
+     * "emailNotifier"/"smsNotifier" name -- the Console demo stand-in by
+     * default, or a real provider (SmtpEmailNotifier/TwilioSmsNotifier)
+     * when configured (see their Javadoc and
+     * app.notifications.*.provider in application.properties). Exactly
+     * one candidate exists for each name at a time, so there's nothing
+     * else for toNotifier() below to choose between at runtime.
+     */
+    @Autowired
+    public AppointmentService(AppointmentRepository appointmentRepository,
+                               PatientService patientService,
+                               DoctorService doctorService,
+                               @Qualifier("emailNotifier") Notifier emailNotifier,
+                               @Qualifier("smsNotifier") Notifier smsNotifier) {
         this.appointmentRepository = appointmentRepository;
         this.patientService = patientService;
         this.doctorService = doctorService;
+        this.emailNotifier = emailNotifier;
+        this.smsNotifier = smsNotifier;
     }
 
     public Appointment createAppointment(int patientId, int doctorId, LocalDateTime dateTime) {
@@ -127,7 +161,7 @@ public class AppointmentService {
         }
         List<Notifier> notifiers = channels.stream()
                 .distinct()
-                .map(AppointmentService::toNotifier)
+                .map(this::toNotifier)
                 .toList();
         remindAppointmentsTomorrow(notifiers);
     }
@@ -161,10 +195,10 @@ public class AppointmentService {
         }
     }
 
-    private static Notifier toNotifier(NotificationChannel channel) {
+    private Notifier toNotifier(NotificationChannel channel) {
         return switch (channel) {
-            case EMAIL -> new ConsoleEmailNotifier();
-            case SMS -> new ConsoleSMSNotifier();
+            case EMAIL -> emailNotifier;
+            case SMS -> smsNotifier;
         };
     }
 

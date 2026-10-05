@@ -83,6 +83,60 @@ class PatientControllerTest {
 
     @Test
     @WithMockUser(roles = "RECEPTIONIST")
+    void registeringWithContactInfoReturnsItBackInTheResponse() throws Exception {
+        // Issue 16 follow-up: email/phone are optional, needed only so a
+        // real notifier (SmtpEmailNotifier/TwilioSmsNotifier) has
+        // somewhere to send a reminder -- this just confirms they round
+        // trip through registration and the response DTO.
+        PatientRequest request = validRequest("Jordan Lee", 35);
+        request.setEmail("jordan.lee@example.com");
+        request.setPhone("+1 555-123-4567");
+
+        mockMvc.perform(post("/api/patients")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.email").value("jordan.lee@example.com"))
+                .andExpect(jsonPath("$.data.phone").value("+1 555-123-4567"));
+    }
+
+    @Test
+    @WithMockUser(roles = "RECEPTIONIST")
+    void registeringWithoutContactInfoLeavesItNull() throws Exception {
+        mockMvc.perform(post("/api/patients")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(validRequest("Alex Rivera", 40))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.email").doesNotExist())
+                .andExpect(jsonPath("$.data.phone").doesNotExist());
+    }
+
+    @Test
+    @WithMockUser(roles = "RECEPTIONIST")
+    void registeringWithAMalformedEmailIsRejected() throws Exception {
+        PatientRequest request = validRequest("Alex Rivera", 40);
+        request.setEmail("not-an-email");
+
+        mockMvc.perform(post("/api/patients")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser(roles = "RECEPTIONIST")
+    void registeringWithAMalformedPhoneIsRejected() throws Exception {
+        PatientRequest request = validRequest("Alex Rivera", 40);
+        request.setPhone("abc");
+
+        mockMvc.perform(post("/api/patients")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser(roles = "RECEPTIONIST")
     void registeringWithABlankNameIsRejected() throws Exception {
         mockMvc.perform(post("/api/patients")
                         .contentType(MediaType.APPLICATION_JSON)

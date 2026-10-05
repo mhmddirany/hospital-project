@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -24,7 +25,8 @@ public class GlobalExceptionHandler {
             PatientNotFoundException.class,
             DoctorNotFoundException.class,
             NurseNotFoundException.class,
-            ReceptionistNotFoundException.class
+            ReceptionistNotFoundException.class,
+            UserNotFoundException.class
     })
     public ResponseEntity<ErrorResponse> handleNotFound(RuntimeException ex,
                                                         HttpServletRequest request) {
@@ -55,6 +57,28 @@ public class GlobalExceptionHandler {
                 request.getRequestURI()
         );
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
+    }
+
+    // ----- 401s -----
+
+    // Issue 21: AuthController's login endpoint authenticates via
+    // AuthenticationManager.authenticate(...), which throws this (e.g.
+    // BadCredentialsException for a wrong password, or because
+    // CustomUserDetailsService reported no such username) instead of
+    // returning normally. Caught here so a failed login gets the same
+    // ErrorResponse JSON shape as every other error this API returns,
+    // rather than falling through to the generic 500 handler below.
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ErrorResponse> handleAuthenticationFailure(AuthenticationException ex,
+                                                                      HttpServletRequest request) {
+        log.warn("Authentication failed at {}: {}", request.getRequestURI(), ex.getMessage());
+        ErrorResponse body = new ErrorResponse(
+                HttpStatus.UNAUTHORIZED.value(),
+                HttpStatus.UNAUTHORIZED.getReasonPhrase(),
+                "Invalid username or password",
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body);
     }
 
     // ----- 400s -----
@@ -115,7 +139,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({
             AppointmentConflictException.class,
-            InvalidAppointmentTransitionException.class
+            InvalidAppointmentTransitionException.class,
+            UserConflictException.class
     })
     public ResponseEntity<ErrorResponse> handleConflict(RuntimeException ex,
                                                         HttpServletRequest request) {
