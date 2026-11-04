@@ -2,6 +2,7 @@ package lab.java.demo.controller;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -193,10 +194,89 @@ class PatientControllerTest {
 
     @Test
     void anUnsupportedMethodOnARealPathReturns405NotA500() throws Exception {
-        // GET /api/patients doesn't exist (only POST does); this used to
-        // fall through to the catch-all handler as a 500.
-        mockMvc.perform(get("/api/patients").with(user("admin-user").roles("ADMIN")))
+        // DELETE /api/patients doesn't exist (only GET and POST do); this
+        // used to fall through to the catch-all handler as a 500.
+        mockMvc.perform(delete("/api/patients").with(user("admin-user").roles("ADMIN")))
                 .andExpect(status().isMethodNotAllowed())
                 .andExpect(jsonPath("$.status").value(405));
+    }
+
+    // ----- Step 2: GET /api/patients (paginated, searchable) -----
+    // Every test registers patients under its own unique name prefix and
+    // filters by it, so data created by the other tests in this class can't
+    // change the counts.
+
+    private void registerAll(String... namesAndAges) throws Exception {
+        for (int i = 0; i < namesAndAges.length; i += 2) {
+            mockMvc.perform(post("/api/patients")
+                            .with(user("receptionist-user").roles("RECEPTIONIST"))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(
+                                    validRequest(namesAndAges[i], Integer.parseInt(namesAndAges[i + 1])))))
+                    .andExpect(status().isOk());
+        }
+    }
+
+    @Test
+    void listReturnsOnePageWithPagingMetadata() throws Exception {
+        registerAll("Pagetest Zed", "30", "Pagetest Amy", "40", "Pagetest Mo", "50");
+
+        mockMvc.perform(get("/api/patients")
+                        .param("name", "pagetest").param("size", "2")
+                        .with(user("nurse-user").roles("NURSE")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content.length()").value(2))
+                .andExpect(jsonPath("$.data.content[0].name").value("Pagetest Amy"))   // default sort: name
+                .andExpect(jsonPath("$.data.content[1].name").value("Pagetest Mo"))
+                .andExpect(jsonPath("$.data.page").value(0))
+                .andExpect(jsonPath("$.data.size").value(2))
+                .andExpect(jsonPath("$.data.totalElements").value(3))
+                .andExpect(jsonPath("$.data.totalPages").value(2))
+                .andExpect(jsonPath("$.data.first").value(true))
+                .andExpect(jsonPath("$.data.last").value(false));
+
+        mockMvc.perform(get("/api/patients")
+                        .param("name", "pagetest").param("size", "2").param("page", "1")
+                        .with(user("nurse-user").roles("NURSE")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content.length()").value(1))
+                .andExpect(jsonPath("$.data.content[0].name").value("Pagetest Zed"))
+                .andExpect(jsonPath("$.data.last").value(true));
+    }
+
+    @Test
+    void listCanSortByAgeDescending() throws Exception {
+        registerAll("Agesort Young", "20", "Agesort Old", "90", "Agesort Middle", "50");
+
+        mockMvc.perform(get("/api/patients")
+                        .param("name", "agesort").param("sort", "age,desc")
+                        .with(user("doctor-user").roles("DOCTOR")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content[0].name").value("Agesort Old"))
+                .andExpect(jsonPath("$.data.content[1].name").value("Agesort Middle"))
+                .andExpect(jsonPath("$.data.content[2].name").value("Agesort Young"));
+    }
+
+    @Test
+    void listRejectsSortingByAFieldThatIsNotAllowed() throws Exception {
+        mockMvc.perform(get("/api/patients").param("sort", "email")
+                        .with(user("admin-user").roles("ADMIN")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message", containsString("Cannot sort by 'email'")));
+    }
+
+    @Test
+    void listCapsThePageSizeAtOneHundred() throws Exception {
+        mockMvc.perform(get("/api/patients").param("size", "5000")
+                        .with(user("admin-user").roles("ADMIN")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.size").value(100));
+    }
+
+    @Test
+    @WithMockUser(roles = "PATIENT")
+    void patientRoleCannotListPatients() throws Exception {
+        mockMvc.perform(get("/api/patients"))
+                .andExpect(status().isForbidden());
     }
 }

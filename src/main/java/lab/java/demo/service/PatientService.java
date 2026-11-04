@@ -6,6 +6,8 @@ import lab.java.demo.repository.PatientRepository;
 import lab.java.demo.util.PatientComparators;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -55,6 +57,20 @@ public class PatientService {
         // line even at DEBUG -- the match count is enough to debug this.
         log.debug("Found {} patients matching a name search", result.size());
         return result;
+    }
+
+    /**
+     * Step 2: one page of patients, optionally filtered by a partial,
+     * case-insensitive name. A blank or missing name means "everyone".
+     */
+    public Page<Patient> findPage(String nameFilter, Pageable pageable) {
+        Page<Patient> page = (nameFilter == null || nameFilter.isBlank())
+                ? patientRepository.findAll(pageable)
+                : patientRepository.findByNameContainingIgnoreCase(nameFilter.trim(), pageable);
+        // Issue 22: counts only, never the search term itself.
+        log.debug("Returning page {} ({} of {} patients)",
+                page.getNumber(), page.getNumberOfElements(), page.getTotalElements());
+        return page;
     }
 
     public List<Patient> getAllSortedByName() {
