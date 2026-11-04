@@ -1,0 +1,28 @@
+# Roadmap step 1: local PostgreSQL for development.
+#
+#   docker compose up -d     start the database in the background
+#   docker compose down      stop it (data is kept in the volume)
+#   docker compose down -v   stop it AND delete all data
+#
+# The credentials below are development-only defaults and match
+# spring.datasource.* in src/main/resources/application.properties.
+services:
+  postgres:
+    image: postgres:17
+    container_name: hospital-postgres
+    environment:
+      POSTGRES_DB: hospital
+      POSTGRES_USER: hospital
+      POSTGRES_PASSWORD: hospital
+    ports:
+      - "5432:5432"
+    volumes:
+      - hospital-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hospital -d hospital"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  hospital-pgdata:

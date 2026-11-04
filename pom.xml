@@ -108,6 +108,38 @@
 			<version>13.0.2</version>
 		</dependency>
 
+		<!-- Roadmap step 1: real database instead of in-memory maps.
+		     Spring Data JPA (Hibernate) maps the models to tables, the
+		     PostgreSQL driver talks to the database started by
+		     docker-compose.yml, and Flyway creates/updates the schema from
+		     versioned SQL files in src/main/resources/db/migration.
+		     Versions come from the Spring Boot parent. -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jpa</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-core</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-database-postgresql</artifactId>
+		</dependency>
+		<!-- Tests run against an in-memory H2 database in PostgreSQL
+		     compatibility mode (see src/test/resources/application-test.properties),
+		     so `mvnw test` works without Docker running. -->
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<scope>test</scope>
+		</dependency>
+
 	</dependencies>
 
 	<build>
@@ -115,6 +147,17 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+			<!-- Every test run uses the "test" profile, which swaps the
+			     PostgreSQL datasource for in-memory H2. -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<systemPropertyVariables>
+						<spring.profiles.active>test</spring.profiles.active>
+					</systemPropertyVariables>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>
