@@ -1,46 +1,20 @@
 package lab.java.demo.repository;
 
-import lab.java.demo.Models.Nurse;
-import lab.java.demo.exception.NurseConflictException;
+import java.util.List;
+
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
+import lab.java.demo.Models.Nurse;
 
+/**
+ * Step 1: a Spring Data JPA repository backed by the database, replacing
+ * the old ConcurrentHashMap. JpaRepository already provides save, findById,
+ * findAll, existsById, deleteById, count and paging; Spring writes the SQL
+ * for each extra method below from its name (a "derived query").
+ */
 @Repository
-public class NurseRepository {
+public interface NurseRepository extends JpaRepository<Nurse, Integer> {
 
-    private final Map<Integer, Nurse> nurses = new ConcurrentHashMap<>();
-
-    public List<Nurse> findAll() {
-        return new ArrayList<>(nurses.values());
-    }
-
-    public Optional<Nurse> findById(int id) {
-        return Optional.ofNullable(nurses.get(id));
-    }
-
-    public Nurse save(Nurse nurse) {
-        if (nurses.putIfAbsent(nurse.getId(), nurse) != null) {
-            throw new NurseConflictException(nurse.getId());
-        }
-        return nurse;
-    }
-
-    public boolean deleteById(int id) {
-        return nurses.remove(id) != null;
-    }
-
-    public List<Nurse> findByDepartment(String department) {
-        List<Nurse> result = new ArrayList<>();
-        for (Nurse n : nurses.values()) {
-            if (department.equalsIgnoreCase(n.getDepartment())) {
-                result.add(n);
-            }
-        }
-        return result;
-    }
+    List<Nurse> findByDepartmentIgnoreCase(String department);
 }

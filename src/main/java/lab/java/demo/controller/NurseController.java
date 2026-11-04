@@ -22,7 +22,7 @@ public class NurseController {
 
     @PostMapping
     public ApiResponse<NurseResponse> addNurse(@Valid @RequestBody NurseRequest request) {
-        Nurse nurse = new Nurse(Nurse.nextId(), request.getName(), request.getAge(), request.getDepartment());
+        Nurse nurse = new Nurse(request.getName(), request.getAge(), request.getDepartment());
         Nurse saved = nurseService.addNurse(nurse);
         return new ApiResponse<>("Nurse added successfully", NurseResponse.from(saved));
     }

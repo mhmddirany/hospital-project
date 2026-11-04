@@ -13,6 +13,9 @@ import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 
 import lab.java.demo.Models.Appointment;
 import lab.java.demo.Models.AppointmentStatus;
@@ -36,7 +39,24 @@ import lab.java.demo.repository.PatientRepository;
  * context or mocks -- constructing the real objects directly is simpler and
  * exercises the real code path.
  */
+/**
+ * Step 1: runs against the real JPA repositories and the test database
+ * ({@code @DataJpaTest}), with the service itself still constructed by
+ * hand -- the test stays a focused service test, but every save and query
+ * now goes through real SQL. Each test is rolled back at the end.
+ */
+@DataJpaTest
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class AppointmentServiceTest {
+
+    @Autowired
+    private PatientRepository patientRepository;
+
+    @Autowired
+    private DoctorRepository doctorRepository;
+
+    @Autowired
+    private AppointmentRepository appointmentRepository;
 
     private AppointmentService appointmentService;
     private PatientService patientService;
@@ -57,16 +77,13 @@ class AppointmentServiceTest {
 
     @BeforeEach
     void setUp() {
-        PatientRepository patientRepository = new PatientRepository();
-        DoctorRepository doctorRepository = new DoctorRepository();
-        AppointmentRepository appointmentRepository = new AppointmentRepository();
 
         patientService = new PatientService(patientRepository);
         doctorService = new DoctorService(doctorRepository);
         appointmentService = new AppointmentService(appointmentRepository, patientService, doctorService);
 
-        patient = patientService.registerPatient(new Patient(Patient.nextId(), "Alex Rivera", 40));
-        doctor = doctorService.addDoctor(new Doctor(Doctor.nextId(), "Dr. Kim", 50, "Cardiology"));
+        patient = patientService.registerPatient(new Patient("Alex Rivera", 40));
+        doctor = doctorService.addDoctor(new Doctor("Dr. Kim", 50, "Cardiology"));
     }
 
     private LocalDateTime tomorrowAt(int hour) {
@@ -231,7 +248,7 @@ class AppointmentServiceTest {
 
     @Test
     void getAppointmentsForPatientReturnsOnlyThatPatientsAppointments() {
-        Patient otherPatient = patientService.registerPatient(new Patient(Patient.nextId(), "Blair Chen", 30));
+        Patient otherPatient = patientService.registerPatient(new Patient("Blair Chen", 30));
         Appointment mine = appointmentService.createAppointment(patient.getId(), doctor.getId(), tomorrowAt(9));
         appointmentService.createAppointment(otherPatient.getId(), doctor.getId(), tomorrowAt(11));
 

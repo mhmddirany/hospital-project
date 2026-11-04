@@ -1,36 +1,16 @@
 package lab.java.demo.repository;
 
-import lab.java.demo.Models.Receptionist;
-import lab.java.demo.exception.ReceptionistConflictException;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
+import lab.java.demo.Models.Receptionist;
 
+/**
+ * Step 1: a Spring Data JPA repository backed by the database, replacing
+ * the old ConcurrentHashMap. JpaRepository already provides save, findById,
+ * findAll, existsById, deleteById, count and paging; Spring writes the SQL
+ * for each extra method below from its name (a "derived query").
+ */
 @Repository
-public class ReceptionistRepository {
-
-    private final Map<Integer, Receptionist> receptionists = new ConcurrentHashMap<>();
-
-    public List<Receptionist> findAll() {
-        return new ArrayList<>(receptionists.values());
-    }
-
-    public Optional<Receptionist> findById(int id) {
-        return Optional.ofNullable(receptionists.get(id));
-    }
-
-    public Receptionist save(Receptionist receptionist) {
-        if (receptionists.putIfAbsent(receptionist.getId(), receptionist) != null) {
-            throw new ReceptionistConflictException(receptionist.getId());
-        }
-        return receptionist;
-    }
-
-    public boolean deleteById(int id) {
-        return receptionists.remove(id) != null;
-    }
+public interface ReceptionistRepository extends JpaRepository<Receptionist, Integer> {
 }

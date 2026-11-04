@@ -29,7 +29,7 @@ public class DoctorController {
 
     @PostMapping
     public ApiResponse<DoctorResponse> addDoctor(@Valid @RequestBody DoctorRequest request) {
-        Doctor doctor = new Doctor(Doctor.nextId(), request.getName(), request.getAge(), request.getSpecialty());
+        Doctor doctor = new Doctor(request.getName(), request.getAge(), request.getSpecialty());
         Doctor saved = doctorService.addDoctor(doctor);
         return new ApiResponse<>("Doctor added successfully", DoctorResponse.from(saved));
     }

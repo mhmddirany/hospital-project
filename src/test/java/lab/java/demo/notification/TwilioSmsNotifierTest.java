@@ -44,13 +44,13 @@ class TwilioSmsNotifierTest {
     }
 
     private Appointment appointmentFor(Patient patient) {
-        Doctor doctor = new Doctor(1, "Dr. Kim", 50, "Cardiology");
-        return new Appointment(1, LocalDateTime.now().plusDays(1), AppointmentStatus.CONFIRMED, patient, doctor);
+        Doctor doctor = new Doctor("Dr. Kim", 50, "Cardiology");
+        return new Appointment(LocalDateTime.now().plusDays(1), AppointmentStatus.CONFIRMED, patient, doctor);
     }
 
     @Test
     void sendsAnSmsToThePatientsPhoneNumberWhenOneIsOnFile() {
-        Patient patient = new Patient(1, "Alex Rivera", 40);
+        Patient patient = new Patient("Alex Rivera", 40);
         patient.setPhone("+15559876543");
 
         RecordingTwilioSmsNotifier notifier = new RecordingTwilioSmsNotifier();
@@ -62,7 +62,7 @@ class TwilioSmsNotifierTest {
 
     @Test
     void skipsSendingWhenThePatientHasNoPhoneNumberOnFile() {
-        Patient patient = new Patient(1, "Alex Rivera", 40);
+        Patient patient = new Patient("Alex Rivera", 40);
         // phone left null
 
         RecordingTwilioSmsNotifier notifier = new RecordingTwilioSmsNotifier();
@@ -73,7 +73,7 @@ class TwilioSmsNotifierTest {
 
     @Test
     void skipsSendingWhenThePatientsPhoneNumberIsBlank() {
-        Patient patient = new Patient(1, "Alex Rivera", 40);
+        Patient patient = new Patient("Alex Rivera", 40);
         patient.setPhone("   ");
 
         RecordingTwilioSmsNotifier notifier = new RecordingTwilioSmsNotifier();

@@ -1,5 +1,6 @@
 package lab.java.demo.service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,7 +22,8 @@ public abstract class BaseCrudService<T, ID> {
     // ---- Reusable CRUD API ----
 
     public List<T> findAll() {
-        return rawFindAll();
+        // Always a fresh, mutable list: callers sort it in place.
+        return new ArrayList<>(rawFindAll());
     }
 
     public Optional<T> findById(ID id) {

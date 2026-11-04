@@ -13,8 +13,8 @@ import lab.java.demo.repository.UserRepository;
 
 /**
  * Issue 21: replaces the old {@code InMemoryUserDetailsManager} bean in
- * SecurityConfig. Looks a username up in the real (in-memory-repository-
- * backed) UserRepository instead of a fixed, hard-coded account list, and
+ * SecurityConfig. Looks a username up in the {@code users} table (via
+ * UserRepository) instead of a fixed, hard-coded account list, and
  * maps its Role onto a single Spring Security authority
  * ({@code ROLE_<name>}).
  *

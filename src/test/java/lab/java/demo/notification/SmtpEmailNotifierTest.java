@@ -74,13 +74,13 @@ class SmtpEmailNotifierTest {
     }
 
     private Appointment appointmentFor(Patient patient) {
-        Doctor doctor = new Doctor(1, "Dr. Kim", 50, "Cardiology");
-        return new Appointment(1, LocalDateTime.now().plusDays(1), AppointmentStatus.CONFIRMED, patient, doctor);
+        Doctor doctor = new Doctor("Dr. Kim", 50, "Cardiology");
+        return new Appointment(LocalDateTime.now().plusDays(1), AppointmentStatus.CONFIRMED, patient, doctor);
     }
 
     @Test
     void sendsAnEmailToThePatientsAddressWhenOneIsOnFile() {
-        Patient patient = new Patient(1, "Alex Rivera", 40);
+        Patient patient = new Patient("Alex Rivera", 40);
         patient.setEmail("alex.rivera@example.com");
 
         RecordingMailSender mailSender = new RecordingMailSender();
@@ -94,7 +94,7 @@ class SmtpEmailNotifierTest {
 
     @Test
     void skipsSendingWhenThePatientHasNoEmailOnFile() {
-        Patient patient = new Patient(1, "Alex Rivera", 40);
+        Patient patient = new Patient("Alex Rivera", 40);
         // email left null
 
         RecordingMailSender mailSender = new RecordingMailSender();
@@ -107,7 +107,7 @@ class SmtpEmailNotifierTest {
 
     @Test
     void skipsSendingWhenThePatientsEmailIsBlank() {
-        Patient patient = new Patient(1, "Alex Rivera", 40);
+        Patient patient = new Patient("Alex Rivera", 40);
         patient.setEmail("   ");
 
         RecordingMailSender mailSender = new RecordingMailSender();

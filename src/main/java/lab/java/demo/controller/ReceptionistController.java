@@ -22,7 +22,7 @@ public class ReceptionistController {
 
     @PostMapping
     public ApiResponse<ReceptionistResponse> addReceptionist(@Valid @RequestBody ReceptionistRequest request) {
-        Receptionist receptionist = new Receptionist(Receptionist.nextId(), request.getName(), request.getAge());
+        Receptionist receptionist = new Receptionist(request.getName(), request.getAge());
         Receptionist saved = receptionistService.addReceptionist(receptionist);
         return new ApiResponse<>("Receptionist added successfully", ReceptionistResponse.from(saved));
     }

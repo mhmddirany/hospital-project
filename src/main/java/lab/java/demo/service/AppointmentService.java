@@ -3,6 +3,8 @@ package lab.java.demo.service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -10,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import lab.java.demo.Models.Appointment;
 import lab.java.demo.Models.AppointmentStatus;
@@ -80,31 +83,37 @@ public class AppointmentService {
         this.smsNotifier = smsNotifier;
     }
 
-    public Appointment createAppointment(int patientId, int doctorId, LocalDateTime dateTime) {
-        if (dateTime == null || dateTime.isBefore(LocalDateTime.now())) {
+    @Transactional
+    public Appointment createAppointment(int patientId, int doctorId, LocalDateTime requestedDateTime) {
+        if (requestedDateTime == null || requestedDateTime.isBefore(LocalDateTime.now())) {
             throw new InvalidAppointmentException("Appointment date/time must be in the future");
         }
+        // Step 1: appointments are booked to the minute. Besides being the
+        // sensible granularity for a clinic, this matters for the database:
+        // LocalDateTime carries nanoseconds but PostgreSQL stores
+        // microseconds, so without truncating, "the same time" sent twice
+        // would no longer compare equal once one copy had been stored, and
+        // the double-booking check below could miss it.
+        LocalDateTime dateTime = requestedDateTime.truncatedTo(ChronoUnit.MINUTES);
 
         Patient patient = patientService.getByIdOrThrow(patientId);
         Doctor doctor = doctorService.findById(doctorId)
                 .orElseThrow(() -> new DoctorNotFoundException(doctorId));
 
-        boolean doctorAlreadyBooked = appointmentRepository.findByDoctorId(doctor.getId()).stream()
-                .anyMatch(existing -> existing.getStatus() != AppointmentStatus.CANCELED
-                        && existing.getDateTime().isEqual(dateTime));
+        boolean doctorAlreadyBooked = appointmentRepository.existsByDoctorIdAndDateTimeAndStatusNot(
+                doctor.getId(), dateTime, AppointmentStatus.CANCELED);
         if (doctorAlreadyBooked) {
             throw new AppointmentConflictException(doctor.getId(), dateTime.toString());
         }
 
         Appointment appt = new Appointment(
-                Appointment.nextId(),
                 dateTime,
                 AppointmentStatus.REQUESTED,
                 patient,
                 doctor
         );
 
-        appointmentRepository.save(appt);
+        appt = appointmentRepository.save(appt);
         log.info("Created appointment id={} for patientId={} with doctorId={} at {}",
                 appt.getId(), patient.getId(), doctor.getId(), dateTime);
         return appt;
@@ -118,6 +127,7 @@ public class AppointmentService {
                 });
     }
 
+    @Transactional
     public Appointment confirmAppointment(int apptId) {
         Appointment appt = getAppointmentOrThrow(apptId);
         appt.confirm();
@@ -126,6 +136,7 @@ public class AppointmentService {
         return appt;
     }
 
+    @Transactional
     public Appointment cancelAppointment(int apptId) {
         Appointment appt = getAppointmentOrThrow(apptId);
         appt.cancel();
@@ -141,7 +152,7 @@ public class AppointmentService {
     }
 
     public List<Appointment> getAppointmentsForDoctorSortedByDate(int doctorId) {
-        List<Appointment> appts = appointmentRepository.findByDoctorId(doctorId);
+        List<Appointment> appts = new ArrayList<>(appointmentRepository.findByDoctorId(doctorId));
         appts.sort(AppointmentComparators.byDateTime());
         log.debug("Found {} appointments for doctorId={} (sorted by date)", appts.size(), doctorId);
         return appts;
@@ -172,6 +183,7 @@ public class AppointmentService {
      * so it can be exercised directly with a test double instead of a real
      * (printing) ConsoleEmailNotifier/ConsoleSMSNotifier.
      */
+    @Transactional(readOnly = true)
     public void remindAppointmentsTomorrow(List<Notifier> notifiers) {
         // "Tomorrow" means the next calendar day, not now..now+24h -- running
         // this at 3pm should not catch today's 4pm appointment or miss
@@ -182,16 +194,16 @@ public class AppointmentService {
         LocalDateTime windowEnd = tomorrow.plusDays(1).atStartOfDay();
         log.info("Sending reminders for appointments in [{}, {})", windowStart, windowEnd);
 
-        for (Appointment appt : appointmentRepository.findAll()) {
-            LocalDateTime dateTime = appt.getDateTime();
-            boolean inWindow = !dateTime.isBefore(windowStart) && dateTime.isBefore(windowEnd);
-            // Only confirmed appointments get reminded -- a cancelled or
-            // still-requested appointment in the same time window shouldn't
-            // prompt the patient to show up.
-            if (inWindow && appt.getStatus() == AppointmentStatus.CONFIRMED) {
-                log.debug("Sending reminder for appointment id={}", appt.getId());
-                appt.remind(notifiers);
-            }
+        // Only confirmed appointments get reminded -- a cancelled or
+        // still-requested appointment in the same time window shouldn't
+        // prompt the patient to show up. Both the window and the status
+        // are filtered by the database now, not by looping over every row.
+        List<Appointment> due = appointmentRepository
+                .findByStatusAndDateTimeGreaterThanEqualAndDateTimeLessThan(
+                        AppointmentStatus.CONFIRMED, windowStart, windowEnd);
+        for (Appointment appt : due) {
+            log.debug("Sending reminder for appointment id={}", appt.getId());
+            appt.remind(notifiers);
         }
     }
 
@@ -203,7 +215,7 @@ public class AppointmentService {
     }
 
     public List<Appointment> getAllAppointmentsSortedByDoctorThenDate() {
-        List<Appointment> all = appointmentRepository.findAll();
+        List<Appointment> all = new ArrayList<>(appointmentRepository.findAll());
         all.sort(AppointmentComparators.byDoctorNameThenDate());
         log.debug("Returning {} appointments sorted by doctor then date", all.size());
         return all;

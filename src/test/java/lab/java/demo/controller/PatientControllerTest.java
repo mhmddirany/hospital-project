@@ -190,4 +190,13 @@ class PatientControllerTest {
         mockMvc.perform(get("/api/patients/sorted/age"))
                 .andExpect(status().isOk());
     }
+
+    @Test
+    void anUnsupportedMethodOnARealPathReturns405NotA500() throws Exception {
+        // GET /api/patients doesn't exist (only POST does); this used to
+        // fall through to the catch-all handler as a 500.
+        mockMvc.perform(get("/api/patients").with(user("admin-user").roles("ADMIN")))
+                .andExpect(status().isMethodNotAllowed())
+                .andExpect(jsonPath("$.status").value(405));
+    }
 }

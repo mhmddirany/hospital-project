@@ -1,58 +1,37 @@
 package lab.java.demo.repository;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import lab.java.demo.Models.Appointment;
+import lab.java.demo.Models.AppointmentStatus;
 
 /**
- * In-memory repository that acts like a collection of Appointment objects.
+ * Step 1: a Spring Data JPA repository backed by the database, replacing
+ * the old ConcurrentHashMap. JpaRepository already provides save, findById,
+ * findAll, existsById, deleteById, count and paging; Spring writes the SQL
+ * for each extra method below from its name (a "derived query").
+ *
+ * <p>The filtering that used to happen in Java (streaming over every
+ * appointment) now happens in the database, using the indexes created in
+ * V1__initial_schema.sql.
  */
 @Repository
-public class AppointmentRepository {
+public interface AppointmentRepository extends JpaRepository<Appointment, Integer> {
 
-    // Internal storage using a thread-safe map, safe for concurrent reads/writes
-    private final Map<Integer, Appointment> appointments = new ConcurrentHashMap<>();
+    /** "PatientId" walks the relationship: WHERE patient_id = :patientId */
+    List<Appointment> findByPatientId(Integer patientId);
 
-    public List<Appointment> findAll() {
-        return new ArrayList<>(appointments.values());
-    }
+    List<Appointment> findByDoctorId(Integer doctorId);
 
-    public Optional<Appointment> findById(int id) {
-        return Optional.ofNullable(appointments.get(id));
-    }
+    /** Double-booking check (Issue 3): does this doctor already have a non-cancelled appointment at exactly this time? */
+    boolean existsByDoctorIdAndDateTimeAndStatusNot(Integer doctorId, LocalDateTime dateTime,
+                                                    AppointmentStatus excludedStatus);
 
-    public Appointment save(Appointment appointment) {
-        appointments.put(appointment.getId(), appointment);
-        return appointment;
-    }
-
-    public boolean deleteById(int id) {
-        return appointments.remove(id) != null;
-    }
-
-    public List<Appointment> findByPatientId(int patientId) {
-        return appointments.values().stream()
-                .filter(a -> a.getPatient().getId() == patientId)
-                .collect(Collectors.toList());
-    }
-
-    public List<Appointment> findByDoctorId(int doctorId) {
-        return appointments.values().stream()
-                .filter(a -> a.getDoctor().getId() == doctorId)
-                .collect(Collectors.toList());
-    }
-
-    public List<Appointment> findByDateRange(LocalDateTime from, LocalDateTime to) {
-        return appointments.values().stream()
-                .filter(a -> !a.getDateTime().isBefore(from) && !a.getDateTime().isAfter(to))
-                .collect(Collectors.toList());
-    }
+    /** Reminder window (Issues 13/14): half-open [start, end), one status. */
+    List<Appointment> findByStatusAndDateTimeGreaterThanEqualAndDateTimeLessThan(
+            AppointmentStatus status, LocalDateTime start, LocalDateTime end);
 }

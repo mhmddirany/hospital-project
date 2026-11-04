@@ -48,7 +48,13 @@ public class UserService extends BaseCrudService<User, Integer> {
 
     @Override
     protected boolean rawDeleteById(Integer id) {
-        return userRepository.deleteById(id);
+        // JpaRepository.deleteById returns nothing, so check first to keep
+        // BaseCrudService's "did anything get deleted?" contract.
+        if (!userRepository.existsById(id)) {
+            return false;
+        }
+        userRepository.deleteById(id);
+        return true;
     }
 
     // -------- User-specific API --------
@@ -66,10 +72,13 @@ public class UserService extends BaseCrudService<User, Integer> {
      * happens to say.
      */
     public User createUser(String username, String rawPassword, Role role) {
-        if (userRepository.findByUsername(username).isPresent()) {
+        if (userRepository.existsByUsername(username)) {
             throw new UserConflictException("Username '" + username + "' is already taken");
         }
-        User user = new User(User.nextId(), username, passwordEncoder.encode(rawPassword), role);
+        // The users.username UNIQUE constraint is the real guarantee; a
+        // concurrent duplicate that slips past the check above fails at
+        // the database and comes back as a 409 via GlobalExceptionHandler.
+        User user = new User(username, passwordEncoder.encode(rawPassword), role);
         return save(user);
     }
 

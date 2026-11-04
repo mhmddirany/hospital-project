@@ -6,7 +6,9 @@ A Spring Boot REST API for managing hospital operations — doctors, nurses, pat
 
 - Java (Spring Boot 3.5.5)
 - Maven
-- H2 (in-memory database) / PostgreSQL support
+- PostgreSQL 17 (Docker) with Spring Data JPA / Hibernate
+- Flyway database migrations
+- H2 in PostgreSQL mode for tests
 - SpringDoc OpenAPI (Swagger UI)
 
 ## Project Structure
@@ -17,10 +19,35 @@ A Spring Boot REST API for managing hospital operations — doctors, nurses, pat
 
 - JDK 25 (the version set in `pom.xml` and used to verify the build)
 - Maven (or use the included `mvnw` / `mvnw.cmd` wrapper — no local Maven install needed)
+- Docker Desktop (runs the PostgreSQL database)
 
 ### Run locally
 
+Start the database, then the app:
+
+```bash
+docker compose up -d          # PostgreSQL in a container, data kept in a Docker volume
+./mvnw spring-boot:run        # Windows PowerShell: .\mvnw.cmd spring-boot:run
+```
+
 The app starts at `http://localhost:8080`.
+
+### Database
+
+- **Schema:** owned by Flyway. Every `src/main/resources/db/migration/V<n>__<name>.sql`
+  file runs once, in order, and is recorded in the `flyway_schema_history` table.
+  Never edit a migration that has already run — add a new `V<n+1>__...sql` instead.
+- **Hibernate** only *validates* the schema (`spring.jpa.hibernate.ddl-auto=validate`):
+  if an `@Entity` and its table disagree, the app refuses to start instead of
+  silently changing the database.
+- **Connection settings** in `application.properties` are development-only defaults
+  matching `docker-compose.yml`. Override them with `SPRING_DATASOURCE_URL`,
+  `SPRING_DATASOURCE_USERNAME` and `SPRING_DATASOURCE_PASSWORD` anywhere real.
+- **Tests** don't need Docker: `mvnw test` runs with the `test` profile, which uses a
+  fresh in-memory H2 database (PostgreSQL mode) per Spring context and runs the same
+  Flyway migrations against it.
+- **Reset your local data:** `docker compose down -v` deletes the volume; the next
+  start recreates the schema from the migrations.
 
 ### API Documentation
 
@@ -142,7 +169,7 @@ require them).
 
 - Wire up REST endpoints for doctors, nurses, patients, and receptionists
 - Add appointment conflict detection to prevent double-booking
-- Move from in-memory storage to JPA + H2/PostgreSQL persistence
+- ~~Move from in-memory storage to JPA + PostgreSQL persistence~~ (done: step 1)
 
 ## License
 

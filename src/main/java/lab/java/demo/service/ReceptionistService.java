@@ -35,7 +35,13 @@ public class ReceptionistService extends BaseCrudService<Receptionist, Integer> 
 
     @Override
     protected boolean rawDeleteById(Integer id) {
-        return receptionistRepository.deleteById(id);
+        // JpaRepository.deleteById returns nothing, so check first to keep
+        // BaseCrudService's "did anything get deleted?" contract.
+        if (!receptionistRepository.existsById(id)) {
+            return false;
+        }
+        receptionistRepository.deleteById(id);
+        return true;
     }
 
     public Receptionist addReceptionist(Receptionist r) {

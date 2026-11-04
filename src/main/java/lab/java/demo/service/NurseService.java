@@ -35,7 +35,13 @@ public class NurseService extends BaseCrudService<Nurse, Integer> {
 
     @Override
     protected boolean rawDeleteById(Integer id) {
-        return nurseRepository.deleteById(id);
+        // JpaRepository.deleteById returns nothing, so check first to keep
+        // BaseCrudService's "did anything get deleted?" contract.
+        if (!nurseRepository.existsById(id)) {
+            return false;
+        }
+        nurseRepository.deleteById(id);
+        return true;
     }
 
     public Nurse addNurse(Nurse nurse) {
@@ -52,7 +58,7 @@ public class NurseService extends BaseCrudService<Nurse, Integer> {
     }
 
     public List<Nurse> findByDepartment(String department) {
-        return nurseRepository.findByDepartment(department);
+        return nurseRepository.findByDepartmentIgnoreCase(department);
     }
 
     public List<Nurse> getAllSortedByName() {

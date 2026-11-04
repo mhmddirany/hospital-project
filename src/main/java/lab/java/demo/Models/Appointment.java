@@ -2,32 +2,68 @@ package lab.java.demo.Models;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.atomic.AtomicInteger;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import lab.java.demo.exception.InvalidAppointmentTransitionException;
 
+@Entity
+@Table(name = "appointments")
 public class Appointment implements Comparable<Appointment> {
-    private static final AtomicInteger ID = new AtomicInteger(1);
 
-    private final int id;
+    /**
+     * Database-generated primary key (step 1: replaces the old in-memory
+     * AtomicInteger counter). {@code null} until the entity is first saved.
+     */
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    @Column(name = "date_time", nullable = false)
     private LocalDateTime dateTime;
+
+    // Stored as the enum's name ("REQUESTED", ...) in a plain varchar
+    // column -- never as its ordinal, which would silently change meaning
+    // if the enum constants were ever reordered.
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(nullable = false, length = 20)
     private AppointmentStatus status;
 
-    private final Patient patient;
-    private final Doctor doctor;
+    // Foreign keys to patients/doctors. EAGER because every response that
+    // shows an appointment also shows its patient and doctor.
+    @ManyToOne(optional = false, fetch = FetchType.EAGER)
+    @JoinColumn(name = "patient_id", nullable = false)
+    private Patient patient;
 
-    public Appointment(int id, LocalDateTime dateTime, AppointmentStatus status, Patient patient, Doctor doctor) {
-        this.id = id;
+    @ManyToOne(optional = false, fetch = FetchType.EAGER)
+    @JoinColumn(name = "doctor_id", nullable = false)
+    private Doctor doctor;
+
+    /** Required by JPA; not for application code. */
+    protected Appointment() {
+    }
+
+    public Appointment(LocalDateTime dateTime, AppointmentStatus status, Patient patient, Doctor doctor) {
         this.dateTime = dateTime;
         this.status = status;
         this.patient = patient;
         this.doctor = doctor;
     }
 
-    public static int nextId() { return ID.getAndIncrement(); }
-
-    public int getId() { return id; }
+    public Integer getId() { return id; }
     public LocalDateTime getDateTime() { return dateTime; }
     public void setDateTime(LocalDateTime dateTime) { this.dateTime = dateTime; }
     public AppointmentStatus getStatus() { return status; }
@@ -64,23 +100,29 @@ public class Appointment implements Comparable<Appointment> {
         }
     }
 
+    // ---------- equals / hashCode ----------
+    // Identity is the database id. Two unsaved instances (id still null)
+    // are only equal to themselves. hashCode is deliberately constant per
+    // class so it doesn't change when the id is assigned on save -- the
+    // standard pattern for JPA entities with generated ids.
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof Appointment)) return false;
-        Appointment that = (Appointment) o;
-        return id == that.id;
+        Appointment other = (Appointment) o;
+        return id != null && id.equals(other.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id);
+        return getClass().hashCode();
     }
 
     @Override
     public int compareTo(Appointment other) {
         int cmp = this.dateTime.compareTo(other.dateTime);
         if (cmp != 0) return cmp;
-        return Integer.compare(this.id, other.id);
+        return Integer.compare(this.id == null ? 0 : this.id, other.id == null ? 0 : other.id);
     }
 }

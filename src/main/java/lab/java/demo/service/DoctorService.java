@@ -37,7 +37,13 @@ public class DoctorService extends BaseCrudService<Doctor, Integer> {
 
     @Override
     protected boolean rawDeleteById(Integer id) {
-        return doctorRepository.deleteById(id);
+        // JpaRepository.deleteById returns nothing, so check first to keep
+        // BaseCrudService's "did anything get deleted?" contract.
+        if (!doctorRepository.existsById(id)) {
+            return false;
+        }
+        doctorRepository.deleteById(id);
+        return true;
     }
 
     // -------- Doctor-specific API --------
@@ -56,7 +62,7 @@ public class DoctorService extends BaseCrudService<Doctor, Integer> {
     }
 
     public List<Doctor> findBySpecialty(String specialty) {
-        return doctorRepository.findBySpecialty(specialty);
+        return doctorRepository.findBySpecialtyIgnoreCase(specialty);
     }
 
     public List<Doctor> getAllSortedByName() {

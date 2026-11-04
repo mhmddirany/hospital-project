@@ -9,37 +9,42 @@ import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 
 import lab.java.demo.Models.Doctor;
-import lab.java.demo.exception.DoctorConflictException;
 import lab.java.demo.exception.DoctorNotFoundException;
 import lab.java.demo.repository.DoctorRepository;
 
+/**
+ * Step 1: runs against the real JPA repositories and the test database
+ * ({@code @DataJpaTest}), with the service itself still constructed by
+ * hand -- the test stays a focused service test, but every save and query
+ * now goes through real SQL. Each test is rolled back at the end.
+ */
+@DataJpaTest
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class DoctorServiceTest {
+
+    @Autowired
+    private DoctorRepository doctorRepository;
 
     private DoctorService doctorService;
 
     @BeforeEach
     void setUp() {
-        doctorService = new DoctorService(new DoctorRepository());
+        doctorService = new DoctorService(doctorRepository);
     }
 
     @Test
     void addDoctorPersistsAndReturnsIt() {
-        Doctor saved = doctorService.addDoctor(new Doctor(Doctor.nextId(), "Dr. Kim", 50, "Cardiology"));
+        Doctor saved = doctorService.addDoctor(new Doctor("Dr. Kim", 50, "Cardiology"));
 
         assertEquals("Cardiology", saved.getSpecialty());
         assertTrue(doctorService.findById(saved.getId()).isPresent());
     }
 
-    @Test
-    void addingADuplicateIdPropagatesTheConflict() {
-        Doctor doctor = new Doctor(999_002, "Dr. Kim", 50, "Cardiology");
-        doctorService.addDoctor(doctor);
-
-        assertThrows(DoctorConflictException.class,
-                () -> doctorService.addDoctor(new Doctor(999_002, "Dr. Someone Else", 40, "Neurology")));
-    }
 
     @Test
     void getByIdOrThrowThrowsWhenMissing() {
@@ -48,8 +53,8 @@ class DoctorServiceTest {
 
     @Test
     void findBySpecialtyFiltersCorrectly() {
-        doctorService.addDoctor(new Doctor(Doctor.nextId(), "Dr. Kim", 50, "Cardiology"));
-        doctorService.addDoctor(new Doctor(Doctor.nextId(), "Dr. Patel", 45, "Neurology"));
+        doctorService.addDoctor(new Doctor("Dr. Kim", 50, "Cardiology"));
+        doctorService.addDoctor(new Doctor("Dr. Patel", 45, "Neurology"));
 
         List<Doctor> cardiologists = doctorService.findBySpecialty("Cardiology");
         assertEquals(1, cardiologists.size());
@@ -61,7 +66,7 @@ class DoctorServiceTest {
         // Issue 19: Receptionist.checkAvailability(doctorId) used to always
         // return true without looking at the doctor. This is the real
         // backing for that check.
-        Doctor doctor = doctorService.addDoctor(new Doctor(Doctor.nextId(), "Dr. Kim", 50, "Cardiology"));
+        Doctor doctor = doctorService.addDoctor(new Doctor("Dr. Kim", 50, "Cardiology"));
         assertTrue(doctorService.isAvailable(doctor.getId()));
 
         doctor.setAvailability(false);
@@ -75,9 +80,9 @@ class DoctorServiceTest {
 
     @Test
     void getAllSortedBySpecialtyGroupsBySpecialtyThenName() {
-        doctorService.addDoctor(new Doctor(Doctor.nextId(), "Dr. Zed", 50, "Neurology"));
-        doctorService.addDoctor(new Doctor(Doctor.nextId(), "Dr. Adams", 40, "Cardiology"));
-        doctorService.addDoctor(new Doctor(Doctor.nextId(), "Dr. Baker", 42, "Cardiology"));
+        doctorService.addDoctor(new Doctor("Dr. Zed", 50, "Neurology"));
+        doctorService.addDoctor(new Doctor("Dr. Adams", 40, "Cardiology"));
+        doctorService.addDoctor(new Doctor("Dr. Baker", 42, "Cardiology"));
 
         List<Doctor> sorted = doctorService.getAllSortedBySpecialty();
         assertEquals("Cardiology", sorted.get(0).getSpecialty());

@@ -7,6 +7,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -16,7 +19,18 @@ import lab.java.demo.exception.UserConflictException;
 import lab.java.demo.exception.UserNotFoundException;
 import lab.java.demo.repository.UserRepository;
 
+/**
+ * Step 1: runs against the real JPA repositories and the test database
+ * ({@code @DataJpaTest}), with the service itself still constructed by
+ * hand -- the test stays a focused service test, but every save and query
+ * now goes through real SQL. Each test is rolled back at the end.
+ */
+@DataJpaTest
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class UserServiceTest {
+
+    @Autowired
+    private UserRepository userRepository;
 
     private UserService userService;
     private PasswordEncoder passwordEncoder;
@@ -24,7 +38,7 @@ class UserServiceTest {
     @BeforeEach
     void setUp() {
         passwordEncoder = new BCryptPasswordEncoder();
-        userService = new UserService(new UserRepository(), passwordEncoder);
+        userService = new UserService(userRepository, passwordEncoder);
     }
 
     @Test

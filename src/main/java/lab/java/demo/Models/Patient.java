@@ -1,13 +1,29 @@
 package lab.java.demo.Models;
 
-import java.util.Objects;
-import java.util.concurrent.atomic.AtomicInteger;
+import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
+@Entity
+@Table(name = "patients")
 public class Patient implements Comparable<Patient> {
-    private static final AtomicInteger ID = new AtomicInteger(1);
 
-    private final int id;
+    /**
+     * Database-generated primary key (step 1: replaces the old in-memory
+     * AtomicInteger counter). {@code null} until the entity is first saved.
+     */
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    @Column(nullable = false)
     private String name;
+
+    @Column(nullable = false)
     private int age;
 
     // Issue 16 follow-up: optional contact info, needed so a real
@@ -16,20 +32,25 @@ public class Patient implements Comparable<Patient> {
     // registered without them simply can't receive a real reminder yet;
     // SmtpEmailNotifier/TwilioSmsNotifier log a warning and skip rather
     // than fail the whole reminder batch over one missing address.
+    @Column
     private String email;
+
+    @Column(length = 32)
     private String phone;
 
-    private final MedicalRecord medicalRecord = new MedicalRecord();
+    @Embedded
+    private MedicalRecord medicalRecord = new MedicalRecord();
 
-    public Patient(int id, String name, int age) {
-        this.id = id;
+    /** Required by JPA; not for application code. */
+    protected Patient() {
+    }
+
+    public Patient(String name, int age) {
         this.name = name;
         this.age = age;
     }
 
-    public static int nextId() { return ID.getAndIncrement(); }
-
-    public int getId() { return id; }
+    public Integer getId() { return id; }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
     public int getAge() { return age; }
@@ -38,33 +59,45 @@ public class Patient implements Comparable<Patient> {
     public void setEmail(String email) { this.email = email; }
     public String getPhone() { return phone; }
     public void setPhone(String phone) { this.phone = phone; }
-    public MedicalRecord getMedicalRecord() { return medicalRecord; }
+
+    public MedicalRecord getMedicalRecord() {
+        // Hibernate loads an embedded object as null when all of its
+        // columns are null; never hand callers a null record.
+        if (medicalRecord == null) {
+            medicalRecord = new MedicalRecord();
+        }
+        return medicalRecord;
+    }
 
     // Issue 19: register()/login() used to live here as stubs that always
-    // returned true without checking or storing anything -- there is no
-    // authentication system yet (that's Issue 21). searchDoctor() used to
-    // always return an empty list; real doctor search already exists at
-    // DoctorService.findBySpecialty(...) / GET /api/doctors/specialty/{s},
-    // so the empty-list stub here was redundant as well as dishonest.
+    // returned true without checking or storing anything. searchDoctor()
+    // used to always return an empty list; real doctor search lives at
+    // DoctorService.findBySpecialty(...) / GET /api/doctors/specialty/{s}.
     // Removed rather than faked.
+
+    // ---------- equals / hashCode ----------
+    // Identity is the database id. Two unsaved instances (id still null)
+    // are only equal to themselves. hashCode is deliberately constant per
+    // class so it doesn't change when the id is assigned on save -- the
+    // standard pattern for JPA entities with generated ids.
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof Patient)) return false;
-        Patient patient = (Patient) o;
-        return id == patient.id;
+        Patient other = (Patient) o;
+        return id != null && id.equals(other.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id);
+        return getClass().hashCode();
     }
 
     @Override
     public int compareTo(Patient other) {
         int cmp = this.name.compareToIgnoreCase(other.name);
         if (cmp != 0) return cmp;
-        return Integer.compare(this.id, other.id);
+        return Integer.compare(this.id == null ? 0 : this.id, other.id == null ? 0 : other.id);
     }
 }

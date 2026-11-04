@@ -2,64 +2,76 @@ package lab.java.demo.repository;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.Optional;
+import java.time.LocalDateTime;
+import java.util.List;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.dao.DataIntegrityViolationException;
 
-import lab.java.demo.Models.Receptionist;
-import lab.java.demo.exception.ReceptionistConflictException;
+import lab.java.demo.Models.*;
 
+/**
+ * Step 1: a {@code @DataJpaTest} starts only the JPA layer (entities,
+ * repositories, Flyway) against the test database -- no web layer, no
+ * security. Each test runs in a transaction that is rolled back at the
+ * end, so tests never see each other's data.
+ *
+ * <p>{@code replace = NONE} keeps the H2-in-PostgreSQL-mode database from
+ * application-test.properties instead of Spring's default embedded one.
+ * {@code flushAndClear()} forces a real INSERT and makes the next read go
+ * back to the database, so these tests check what was actually stored,
+ * not just objects sitting in Hibernate's cache.
+ */
+@DataJpaTest
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class ReceptionistRepositoryTest {
 
+    @Autowired
+    private TestEntityManager em;
+
+    @Autowired
     private ReceptionistRepository repository;
 
-    @BeforeEach
-    void setUp() {
-        repository = new ReceptionistRepository();
+    @Test
+    void saveGeneratesAnIdAndTheRowCanBeReadBack() {
+        Receptionist saved = repository.save(new Receptionist("Rana Youssef", 27));
+        assertNotNull(saved.getId());
+        flushAndClear();
+        assertEquals("Rana Youssef", repository.findById(saved.getId()).orElseThrow().getName());
     }
 
     @Test
-    void savesAndFindsById() {
-        Receptionist saved = repository.save(new Receptionist(1, "Rana Youssef", 27));
-
-        Optional<Receptionist> found = repository.findById(1);
-        assertTrue(found.isPresent());
-        assertEquals(saved, found.get());
-        assertEquals("Rana Youssef", found.get().getName());
-    }
-
-    @Test
-    void findByIdReturnsEmptyWhenMissing() {
-        assertTrue(repository.findById(404).isEmpty());
-    }
-
-    @Test
-    void savingADuplicateIdThrowsConflict() {
-        repository.save(new Receptionist(1, "Rana Youssef", 27));
-
-        assertThrows(ReceptionistConflictException.class,
-                () -> repository.save(new Receptionist(1, "Someone Else", 31)));
-
-        assertEquals("Rana Youssef", repository.findById(1).orElseThrow().getName());
-    }
-
-    @Test
-    void findAllReturnsEveryReceptionist() {
-        repository.save(new Receptionist(1, "Rana Youssef", 27));
-        repository.save(new Receptionist(2, "Samir Aziz", 33));
-
+    void findAllReturnsEverySavedReceptionist() {
+        repository.save(new Receptionist("Rana Youssef", 27));
+        repository.save(new Receptionist("Karim Nasser", 31));
+        flushAndClear();
         assertEquals(2, repository.findAll().size());
     }
 
     @Test
-    void deleteByIdRemovesTheRecordAndReportsWhetherAnythingWasRemoved() {
-        repository.save(new Receptionist(1, "Rana Youssef", 27));
+    void findByIdReturnsEmptyWhenMissing() {
+        assertTrue(repository.findById(404_404).isEmpty());
+    }
 
-        assertTrue(repository.deleteById(1));
-        assertFalse(repository.deleteById(1));
+    @Test
+    void deleteByIdRemovesTheRow() {
+        Integer id = repository.save(new Receptionist("Rana Youssef", 27)).getId();
+        repository.deleteById(id);
+        flushAndClear();
+        assertFalse(repository.existsById(id));
+    }
+
+    private void flushAndClear() {
+        em.flush();
+        em.clear();
     }
 }

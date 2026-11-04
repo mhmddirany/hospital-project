@@ -6,6 +6,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
@@ -13,20 +16,28 @@ import lab.java.demo.Models.Role;
 import lab.java.demo.Models.User;
 import lab.java.demo.repository.UserRepository;
 
+/**
+ * Step 1: runs against the real JPA repositories and the test database
+ * ({@code @DataJpaTest}), with the service itself still constructed by
+ * hand -- the test stays a focused service test, but every save and query
+ * now goes through real SQL. Each test is rolled back at the end.
+ */
+@DataJpaTest
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class CustomUserDetailsServiceTest {
 
+    @Autowired
     private UserRepository userRepository;
     private CustomUserDetailsService userDetailsService;
 
     @BeforeEach
     void setUp() {
-        userRepository = new UserRepository();
         userDetailsService = new CustomUserDetailsService(userRepository);
     }
 
     @Test
     void loadsAKnownUserAndMapsItsRoleToASpringSecurityAuthority() {
-        userRepository.save(new User(1, "dr.kim", "hashed-pw", Role.DOCTOR));
+        userRepository.save(new User("dr.kim", "hashed-pw", Role.DOCTOR));
 
         UserDetails details = userDetailsService.loadUserByUsername("dr.kim");
 

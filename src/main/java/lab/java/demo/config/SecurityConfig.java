@@ -38,10 +38,9 @@ import lab.java.demo.security.JwtAuthenticationFilter;
  * feedback, that's replaced with:
  * <ul>
  *   <li>a real {@code User} entity ({@link lab.java.demo.Models.User}),
- *       stored in {@link lab.java.demo.repository.UserRepository} -- an
- *       in-memory {@code ConcurrentHashMap}, consistent with every other
- *       repository in this project (see Issues 6 and 17), rather than
- *       reintroducing a JPA/H2 database just for this;</li>
+ *       stored in the {@code users} table through
+ *       {@link lab.java.demo.repository.UserRepository} (a Spring Data JPA
+ *       repository since roadmap step 1);</li>
  *   <li>a {@link lab.java.demo.security.CustomUserDetailsService} backed
  *       by that repository, replacing {@code InMemoryUserDetailsManager};</li>
  *   <li>BCrypt-hashed passwords (unchanged -- this app already hashed
